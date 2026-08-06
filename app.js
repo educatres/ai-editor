@@ -28,8 +28,6 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
-  statusText: document.querySelector("#statusText"),
-  configSummary: document.querySelector("#configSummary"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
   promptBtn: document.querySelector("#promptBtn"),
@@ -60,7 +58,7 @@ function saveValue(key, value) {
   try {
     localStorage.setItem(key, value);
   } catch (error) {
-    setStatus(`無法儲存至瀏覽器：${error.message}`, true);
+    reportError(`無法儲存至瀏覽器：${error.message}`);
   }
 }
 
@@ -90,7 +88,6 @@ function loadState() {
     : DEFAULTS.model;
 
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
-  updateConfigSummary();
 }
 
 function saveSettings() {
@@ -99,17 +96,10 @@ function saveSettings() {
   saveValue(STORAGE_KEYS.endpoint, settings.endpoint || DEFAULTS.endpoint);
   saveValue(STORAGE_KEYS.model, settings.model);
   saveValue(STORAGE_KEYS.systemPrompt, settings.systemPrompt);
-  updateConfigSummary();
 }
 
-function updateConfigSummary() {
-  const model = elements.model.value || DEFAULTS.model;
-  elements.configSummary.textContent = `${model}｜medium｜default`;
-}
-
-function setStatus(message, isError = false) {
-  elements.statusText.textContent = message;
-  elements.statusText.style.color = isError ? "#a32020" : "";
+function reportError(message) {
+  window.alert(message);
 }
 
 function setBusy(busy) {
@@ -197,7 +187,6 @@ async function runPolish() {
     const results = new Map();
     for (let index = 0; index < nonEmptyBlocks.length; index += 1) {
       const block = nonEmptyBlocks[index];
-      setStatus(`正在潤飾第 ${index + 1}／${nonEmptyBlocks.length} 段…`);
       const result = await polishText(block.content.trim(), settings);
       results.set(block.start, result);
     }
@@ -205,9 +194,8 @@ async function runPolish() {
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
     saveValue(STORAGE_KEYS.editor, output);
-    setStatus(`已完成 ${nonEmptyBlocks.length} 段潤飾`);
   } catch (error) {
-    setStatus(error.message || "潤飾失敗", true);
+    reportError(error.message || "潤飾失敗");
     if (!elements.apiKey.value.trim()) elements.settingsDialog.showModal();
   } finally {
     setBusy(false);
@@ -218,11 +206,9 @@ async function runPolish() {
 async function copyEditor() {
   try {
     await navigator.clipboard.writeText(elements.editor.value);
-    setStatus("已複製全文");
   } catch {
     elements.editor.select();
     document.execCommand("copy");
-    setStatus("已複製全文");
   }
 }
 
@@ -235,7 +221,6 @@ function downloadEditor() {
   link.download = `ai-polished-${stamp}.md`;
   link.click();
   URL.revokeObjectURL(url);
-  setStatus("已下載 Markdown 檔");
 }
 
 function clearRecords() {
@@ -248,8 +233,6 @@ function clearRecords() {
   elements.endpoint.value = DEFAULTS.endpoint;
   elements.model.value = DEFAULTS.model;
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
-  updateConfigSummary();
-  setStatus("已清除所有本機記錄");
 }
 
 let saveTimer;
@@ -257,7 +240,6 @@ elements.editor.addEventListener("input", () => {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveValue(STORAGE_KEYS.editor, elements.editor.value);
-    setStatus("已自動儲存");
   }, 250);
 });
 
@@ -270,12 +252,10 @@ elements.clearBtn.addEventListener("click", clearRecords);
 
 elements.settingsForm.addEventListener("submit", () => {
   saveSettings();
-  setStatus("API 設定已儲存");
 });
 
 elements.promptForm.addEventListener("submit", () => {
   saveValue(STORAGE_KEYS.systemPrompt, elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt);
-  setStatus("System prompt 已儲存");
 });
 
 elements.resetPromptBtn.addEventListener("click", () => {
