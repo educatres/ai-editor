@@ -7,7 +7,7 @@ import {
   getProvider,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=4";
+} from "./core.js?v=6";
 import { PROMPT_PRESETS, appendPromptText } from "./prompt-presets.js?v=1";
 
 const STORAGE_KEYS = {
@@ -35,6 +35,7 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
+  lineNumbers: document.querySelector("#lineNumbers"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
   promptBtn: document.querySelector("#promptBtn"),
@@ -66,6 +67,7 @@ const elements = {
 let activeProvider = DEFAULTS.provider;
 let providerConfigs = {};
 let editorFontSize = DEFAULTS.fontSize;
+let renderedLineCount = 0;
 
 function loadValue(key, fallback = "") {
   try {
@@ -154,6 +156,17 @@ function getSettings() {
   };
 }
 
+function updateLineNumbers() {
+  const lineCount = elements.editor.value.split("\n").length;
+  if (lineCount === renderedLineCount) return;
+
+  const numbers = [];
+  for (let line = 1; line <= lineCount; line += 1) numbers.push(String(line));
+  elements.lineNumbers.textContent = numbers.join("\n");
+  renderedLineCount = lineCount;
+  elements.lineNumbers.scrollTop = elements.editor.scrollTop;
+}
+
 function applyFontSize(value, persist = true) {
   const numeric = Number(value);
   editorFontSize = Math.min(
@@ -174,6 +187,7 @@ function loadState() {
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
   elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
+  updateLineNumbers();
 }
 
 function saveSettings() {
@@ -257,6 +271,7 @@ async function runPolish() {
 
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
+    updateLineNumbers();
     saveValue(STORAGE_KEYS.editor, output);
   } catch (error) {
     reportError(error.message || "潤飾失敗");
@@ -331,6 +346,8 @@ function clearRecords() {
   providerConfigs = {};
   activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
+  renderedLineCount = 0;
+  updateLineNumbers();
   elements.searchInput.value = "";
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   renderProvider(DEFAULTS.provider);
@@ -339,10 +356,15 @@ function clearRecords() {
 
 let saveTimer;
 elements.editor.addEventListener("input", () => {
+  updateLineNumbers();
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveValue(STORAGE_KEYS.editor, elements.editor.value);
   }, 250);
+});
+
+elements.editor.addEventListener("scroll", () => {
+  elements.lineNumbers.scrollTop = elements.editor.scrollTop;
 });
 
 elements.searchInput.addEventListener("input", () => {

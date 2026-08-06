@@ -258,12 +258,10 @@ export function cleanModelOutput(text) {
   return cleaned.trim();
 }
 
-export function formatAsCommentLines(text) {
-  return text
-    .trim()
-    .split(/\r?\n/)
-    .map((line) => (line.trim() ? `# ${line}` : "#"))
-    .join("\n");
+export const ORIGINAL_MARKER = "#潤飾前------------------";
+
+export function formatOriginalBlock(text) {
+  return `${ORIGINAL_MARKER}\n${text.trim()}\n${ORIGINAL_MARKER}`;
 }
 
 export function renderPolishedDocument(originalText, blocks, results) {
@@ -296,7 +294,7 @@ export function renderPolishedDocument(originalText, blocks, results) {
 
     const block = blockByStart.get(index);
     if (block) {
-      output += formatAsCommentLines(block.content);
+      output += formatOriginalBlock(block.content);
       index = block.end;
       continue;
     }
