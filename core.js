@@ -264,6 +264,11 @@ export function formatOriginalBlock(text) {
   return `${ORIGINAL_MARKER}\n${text.trim()}\n${ORIGINAL_MARKER}`;
 }
 
+export function renderFullPolishedDocument(originalText, result) {
+  const trailingLineBreak = originalText.endsWith("\n") ? "" : "\n";
+  return `${ORIGINAL_MARKER}\n${originalText}${trailingLineBreak}${ORIGINAL_MARKER}\n${cleanModelOutput(result)}`;
+}
+
 export function renderPolishedDocument(originalText, blocks, results) {
   const blockByStart = new Map(blocks.map((block) => [block.start, block]));
   const insertions = new Map();

@@ -23,7 +23,7 @@ button { cursor: pointer; }
 .app {
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
@@ -43,6 +43,37 @@ button { cursor: pointer; }
   gap: 5px;
   flex: 0 0 auto;
   width: max-content;
+}
+
+.toolbar-check,
+.prompt-replace-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.toolbar-check input,
+.prompt-replace-option input {
+  width: auto;
+  margin: 0;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.search-bar[hidden] { display: none; }
+.search-bar label { display: block; white-space: nowrap; }
+.search-bar input {
+  flex: 1 1 240px;
+  min-width: 140px;
+  width: auto;
 }
 
 button {

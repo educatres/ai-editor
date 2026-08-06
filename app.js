@@ -5,10 +5,11 @@ import {
   findPolishBlocks,
   findSearchMatch,
   getProvider,
+  renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=6";
-import { PROMPT_PRESETS, appendPromptText } from "./prompt-presets.js?v=1";
+} from "./core.js?v=7";
+import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=2";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
@@ -20,6 +21,8 @@ const STORAGE_KEYS = {
   systemPrompt: "cguAiEditor.systemPrompt",
   searchTerm: "cguAiEditor.searchTerm",
   fontSize: "cguAiEditor.fontSize",
+  replacePrompt: "cguAiEditor.replacePrompt",
+  fullPolish: "cguAiEditor.fullPolish",
 };
 
 const DEFAULTS = {
@@ -45,7 +48,7 @@ const elements = {
   zoomInBtn: document.querySelector("#zoomInBtn"),
   zoomOutBtn: document.querySelector("#zoomOutBtn"),
   clearBtn: document.querySelector("#clearBtn"),
-  searchDialog: document.querySelector("#searchDialog"),
+  fullPolish: document.querySelector("#fullPolish"),
   settingsDialog: document.querySelector("#settingsDialog"),
   promptDialog: document.querySelector("#promptDialog"),
   searchForm: document.querySelector("#searchForm"),
@@ -53,12 +56,14 @@ const elements = {
   promptForm: document.querySelector("#promptForm"),
   searchInput: document.querySelector("#searchInput"),
   searchPrevBtn: document.querySelector("#searchPrevBtn"),
+  searchCloseBtn: document.querySelector("#searchCloseBtn"),
   provider: document.querySelector("#provider"),
   apiKey: document.querySelector("#apiKey"),
   endpoint: document.querySelector("#endpoint"),
   model: document.querySelector("#model"),
   providerHint: document.querySelector("#providerHint"),
   systemPrompt: document.querySelector("#systemPrompt"),
+  replacePrompt: document.querySelector("#replacePrompt"),
   toggleKeyBtn: document.querySelector("#toggleKeyBtn"),
   appendGeneralPromptBtn: document.querySelector("#appendGeneralPromptBtn"),
   appendCodexPromptBtn: document.querySelector("#appendCodexPromptBtn"),
@@ -186,6 +191,8 @@ function loadState() {
   renderProvider(PROVIDERS[storedProvider] ? storedProvider : DEFAULTS.provider);
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
   elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
+  elements.replacePrompt.checked = loadValue(STORAGE_KEYS.replacePrompt, "false") === "true";
+  elements.fullPolish.checked = loadValue(STORAGE_KEYS.fullPolish, "false") === "true";
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
   updateLineNumbers();
 }
@@ -208,6 +215,7 @@ function setBusy(busy) {
   elements.settingsBtn.disabled = busy;
   elements.promptBtn.disabled = busy;
   elements.searchBtn.disabled = busy;
+  elements.fullPolish.disabled = busy;
   elements.clearBtn.disabled = busy;
   elements.polishBtn.textContent = busy ? "潤飾中…" : "潤飾";
 }
@@ -248,6 +256,22 @@ async function runPolish() {
 
   try {
     validateSettings(settings);
+
+    if (elements.fullPolish.checked) {
+      if (!originalText.trim()) throw new Error("沒有可潤飾的文字。");
+
+      saveSettings();
+      saveValue(STORAGE_KEYS.editor, originalText);
+      setBusy(true);
+
+      const result = await polishText(originalText, settings);
+      const output = renderFullPolishedDocument(originalText, result);
+      elements.editor.value = output;
+      updateLineNumbers();
+      saveValue(STORAGE_KEYS.editor, output);
+      return;
+    }
+
     const blocks = findPolishBlocks(originalText);
     const nonEmptyBlocks = blocks.filter((block) => block.content.trim());
 
@@ -309,7 +333,6 @@ function runSearch(direction = 1) {
   }
 
   saveValue(STORAGE_KEYS.searchTerm, query);
-  elements.searchDialog.close();
   elements.editor.focus();
   elements.editor.setSelectionRange(match.start, match.end);
 }
@@ -320,7 +343,11 @@ function changeFontSize(delta) {
 }
 
 function appendPromptPreset(preset) {
-  elements.systemPrompt.value = appendPromptText(elements.systemPrompt.value, preset.content);
+  elements.systemPrompt.value = mergePromptText(
+    elements.systemPrompt.value,
+    preset.content,
+    elements.replacePrompt.checked,
+  );
   elements.systemPrompt.focus();
   const end = elements.systemPrompt.value.length;
   elements.systemPrompt.setSelectionRange(end, end);
@@ -349,6 +376,9 @@ function clearRecords() {
   renderedLineCount = 0;
   updateLineNumbers();
   elements.searchInput.value = "";
+  elements.searchForm.hidden = true;
+  elements.replacePrompt.checked = false;
+  elements.fullPolish.checked = false;
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   renderProvider(DEFAULTS.provider);
   applyFontSize(DEFAULTS.fontSize, false);
@@ -373,7 +403,7 @@ elements.searchInput.addEventListener("input", () => {
 
 elements.settingsBtn.addEventListener("click", () => elements.settingsDialog.showModal());
 elements.searchBtn.addEventListener("click", () => {
-  elements.searchDialog.showModal();
+  elements.searchForm.hidden = false;
   elements.searchInput.focus();
   elements.searchInput.select();
 });
@@ -395,6 +425,18 @@ elements.searchForm.addEventListener("submit", (event) => {
 });
 
 elements.searchPrevBtn.addEventListener("click", () => runSearch(-1));
+elements.searchCloseBtn.addEventListener("click", () => {
+  elements.searchForm.hidden = true;
+  elements.editor.focus();
+});
+
+elements.replacePrompt.addEventListener("change", () => {
+  saveValue(STORAGE_KEYS.replacePrompt, String(elements.replacePrompt.checked));
+});
+
+elements.fullPolish.addEventListener("change", () => {
+  saveValue(STORAGE_KEYS.fullPolish, String(elements.fullPolish.checked));
+});
 
 elements.settingsForm.addEventListener("submit", () => {
   saveSettings();

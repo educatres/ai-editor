@@ -9,10 +9,11 @@ import {
   findPolishBlocks,
   findSearchMatch,
   formatOriginalBlock,
+  renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
 } from "./core.js";
-import { PROMPT_PRESETS, appendPromptText } from "./prompt-presets.js";
+import { PROMPT_PRESETS, PROMPT_SEPARATOR, mergePromptText } from "./prompt-presets.js";
 
 assert.equal(
   buildResponsesUrl("https://air.cgu.edu.tw/cgullmapi/v1/"),
@@ -163,10 +164,21 @@ assert.equal(PROMPT_PRESETS.general.content.startsWith("你是繁體中文文字
 assert.equal(PROMPT_PRESETS.codex.content.includes("## 基本原則"), true);
 assert.equal(PROMPT_PRESETS.codex.content.includes("### 十二、完成後交付內容"), true);
 assert.equal(
-  appendPromptText("既有內容", PROMPT_PRESETS.general.content),
-  `既有內容\n\n${PROMPT_PRESETS.general.content}`,
+  mergePromptText("既有內容", PROMPT_PRESETS.general.content),
+  `既有內容\n${PROMPT_SEPARATOR}\n${PROMPT_PRESETS.general.content}`,
 );
-assert.equal(appendPromptText("", PROMPT_PRESETS.general.content), PROMPT_PRESETS.general.content);
+assert.equal(
+  mergePromptText("既有內容\n", "新增內容"),
+  `既有內容\n${PROMPT_SEPARATOR}\n新增內容`,
+);
+assert.equal(mergePromptText("既有內容", "新增內容", true), "新增內容");
+assert.equal(mergePromptText("", PROMPT_PRESETS.general.content), PROMPT_PRESETS.general.content);
+
+const fullOriginal = String.raw`全文 {{不解析}} \{不跳脫\}`;
+assert.equal(
+  renderFullPolishedDocument(fullOriginal, "```text\n結果：全文完成\n```"),
+  `${ORIGINAL_MARKER}\n${fullOriginal}\n${ORIGINAL_MARKER}\n全文完成`,
+);
 
 assert.equal(extractResponseText({ output_text: "完成" }), "完成");
 assert.equal(

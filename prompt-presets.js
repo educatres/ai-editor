@@ -212,9 +212,10 @@ export const PROMPT_PRESETS = {
   },
 };
 
-export function appendPromptText(currentText, presetText) {
-  if (!currentText) return presetText;
-  if (currentText.endsWith("\n\n")) return `${currentText}${presetText}`;
-  if (currentText.endsWith("\n")) return `${currentText}\n${presetText}`;
-  return `${currentText}\n\n${presetText}`;
+export const PROMPT_SEPARATOR = "===以下是新增的system prompt===";
+
+export function mergePromptText(currentText, presetText, replaceCurrent = false) {
+  if (replaceCurrent || !currentText) return presetText;
+  const lineBreak = currentText.endsWith("\n") ? "" : "\n";
+  return `${currentText}${lineBreak}${PROMPT_SEPARATOR}\n${presetText}`;
 }

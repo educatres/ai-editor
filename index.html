@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>AI Editor</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <main class="app">
     <header class="toolbar" aria-label="工具列">
       <div class="toolbar-actions">
         <button id="polishBtn" type="button" class="primary">潤飾</button>
+        <label class="toolbar-check">
+          <input id="fullPolish" type="checkbox">
+          全文潤飾
+        </label>
         <button id="copyBtn" type="button">複製</button>
         <button id="searchBtn" type="button">Search</button>
         <button id="promptBtn" type="button">System prompt</button>
@@ -22,6 +26,14 @@
         <button id="clearBtn" type="button" class="danger">清除記錄</button>
       </div>
     </header>
+
+    <form id="searchForm" class="search-bar" role="search" hidden>
+      <label for="searchInput">Search</label>
+      <input id="searchInput" type="search" autocomplete="off" placeholder="輸入搜尋字串">
+      <button id="searchPrevBtn" type="button">上一個</button>
+      <button type="submit" class="primary">下一個</button>
+      <button id="searchCloseBtn" type="button" aria-label="關閉搜尋">關閉</button>
+    </form>
 
     <div class="editor-shell">
       <div id="lineNumbers" class="line-numbers" aria-hidden="true">1</div>
@@ -34,25 +46,6 @@
       ></textarea>
     </div>
   </main>
-
-  <dialog id="searchDialog">
-    <form class="dialog-form" id="searchForm">
-      <div class="dialog-head">
-        <strong>搜尋</strong>
-        <button type="button" class="icon-btn" data-close="searchDialog" aria-label="關閉">×</button>
-      </div>
-
-      <label>
-        搜尋字串
-        <input id="searchInput" type="search" autocomplete="off">
-      </label>
-
-      <div class="dialog-actions">
-        <button id="searchPrevBtn" type="button">上一個</button>
-        <button type="submit" class="primary">下一個</button>
-      </div>
-    </form>
-  </dialog>
 
   <dialog id="settingsDialog">
     <form method="dialog" class="dialog-form" id="settingsForm">
@@ -107,7 +100,11 @@
       </div>
 
       <div class="prompt-presets">
-        <span>範例（追加到現有文字下方）</span>
+        <span>範本</span>
+        <label class="prompt-replace-option">
+          <input id="replacePrompt" type="checkbox">
+          取代原本的 prompt（未勾選時追加在後面）
+        </label>
         <div class="preset-actions">
           <button id="appendGeneralPromptBtn" type="button">通用</button>
           <button id="appendCodexPromptBtn" type="button">Codex 開發</button>
@@ -126,6 +123,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=7"></script>
 </body>
 </html>
