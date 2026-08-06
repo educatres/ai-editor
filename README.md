@@ -4,13 +4,11 @@
 
 ## 功能
 
-- 自訂 API Key、Endpoint 與模型
-- 預設 Endpoint：`https://air.cgu.edu.tw/cgullmapi/v1`
-- 預設模型：`gpt-5.6-luna`
-- 可選模型：`gpt-5.6-sol`
-- Responses API：`POST /responses`
-- `reasoning.effort: medium`
-- `service_tier: default`
+- 支援 CGU、ChatGPT（OpenAI）、Gemini（Google AI）與 Claude（Anthropic）
+- 自動帶入各供應商的官方 Endpoint
+- ChatGPT、Gemini、Claude 各提供五種近期模型
+- 各供應商分別保存 API Key、Endpoint 與模型
+- 支援 OpenAI Responses、Gemini generateContent 與 Claude Messages API
 - 自訂 System prompt
 - 多組 `{{ }}` 依序潤飾
 - 文章與設定自動保存至 LocalStorage
@@ -22,7 +20,7 @@
 ## 使用方式
 
 1. 開啟頁面，按「API」。
-2. 輸入 API Key，確認 Endpoint 與模型。
+2. 選擇供應商，輸入其 API Key，並確認 Endpoint 與模型。
 3. 在編輯器輸入：
 
 ```text

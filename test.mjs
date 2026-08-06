@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import {
+  PROVIDERS,
+  buildProviderRequest,
   buildResponsesUrl,
+  extractProviderText,
   extractResponseText,
   findPolishBlocks,
   formatAsCommentLines,
@@ -14,6 +17,66 @@ assert.equal(
 assert.equal(
   buildResponsesUrl("https://example.com/v1/responses"),
   "https://example.com/v1/responses",
+);
+
+assert.equal(PROVIDERS.openai.models.length, 5);
+assert.equal(PROVIDERS.gemini.models.length, 5);
+assert.equal(PROVIDERS.claude.models.length, 5);
+
+const sharedSettings = {
+  apiKey: "test-key",
+  systemPrompt: "只輸出結果",
+  reasoningEffort: "medium",
+  serviceTier: "default",
+};
+
+const openAiRequest = buildProviderRequest("原文", {
+  ...sharedSettings,
+  provider: "openai",
+  endpoint: PROVIDERS.openai.endpoint,
+  model: PROVIDERS.openai.models[0],
+});
+assert.equal(openAiRequest.url, "https://api.openai.com/v1/responses");
+assert.equal(openAiRequest.options.headers.Authorization, "Bearer test-key");
+assert.equal(JSON.parse(openAiRequest.options.body).model, "gpt-5.6-sol");
+
+const geminiRequest = buildProviderRequest("原文", {
+  ...sharedSettings,
+  provider: "gemini",
+  endpoint: PROVIDERS.gemini.endpoint,
+  model: PROVIDERS.gemini.models[0],
+});
+const geminiBody = JSON.parse(geminiRequest.options.body);
+assert.equal(
+  geminiRequest.url,
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+);
+assert.equal(geminiRequest.options.headers["x-goog-api-key"], "test-key");
+assert.equal(geminiBody.systemInstruction.parts[0].text, "只輸出結果");
+
+const claudeRequest = buildProviderRequest("原文", {
+  ...sharedSettings,
+  provider: "claude",
+  endpoint: PROVIDERS.claude.endpoint,
+  model: PROVIDERS.claude.models[0],
+});
+const claudeBody = JSON.parse(claudeRequest.options.body);
+assert.equal(claudeRequest.url, "https://api.anthropic.com/v1/messages");
+assert.equal(claudeRequest.options.headers["x-api-key"], "test-key");
+assert.equal(claudeRequest.options.headers["anthropic-version"], "2023-06-01");
+assert.equal(claudeBody.model, "claude-fable-5");
+
+assert.equal(
+  extractProviderText("gemini", {
+    candidates: [{ content: { parts: [{ text: "內部思考", thought: true }, { text: "Gemini 完成" }] } }],
+  }),
+  "Gemini 完成",
+);
+assert.equal(
+  extractProviderText("claude", {
+    content: [{ type: "thinking", thinking: "內部思考" }, { type: "text", text: "Claude 完成" }],
+  }),
+  "Claude 完成",
 );
 
 const sample = "前文\n{{原文一}}\n中段 {{原文二}} 後段\n結尾";

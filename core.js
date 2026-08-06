@@ -38,6 +38,148 @@ export function buildResponsesUrl(endpoint) {
   return `${clean}/responses`;
 }
 
+export const PROVIDERS = {
+  cgu: {
+    label: "CGU（現有）",
+    endpoint: "https://air.cgu.edu.tw/cgullmapi/v1",
+    models: ["gpt-5.6-luna", "gpt-5.6-sol"],
+    hint: "OpenAI Responses 相容 API｜推理強度 medium｜速度 default",
+  },
+  openai: {
+    label: "ChatGPT（OpenAI API）",
+    endpoint: "https://api.openai.com/v1",
+    models: ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4"],
+    hint: "OpenAI Responses API｜推理強度 medium｜速度 default",
+  },
+  gemini: {
+    label: "Gemini（Google AI）",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta",
+    models: [
+      "gemini-3.6-flash",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.1-pro-preview",
+      "gemini-3.1-flash-lite",
+    ],
+    hint: "Google Gemini generateContent API",
+  },
+  claude: {
+    label: "Claude（Anthropic API）",
+    endpoint: "https://api.anthropic.com/v1",
+    models: [
+      "claude-fable-5",
+      "claude-opus-5",
+      "claude-sonnet-5",
+      "claude-opus-4-8",
+      "claude-haiku-4-5-20251001",
+    ],
+    hint: "Anthropic Messages API｜版本 2023-06-01",
+  },
+};
+
+export function getProvider(providerId) {
+  return PROVIDERS[providerId] ?? PROVIDERS.cgu;
+}
+
+function buildGeminiUrl(endpoint, model) {
+  const clean = endpoint.trim().replace(/\/+$/, "");
+  if (/:generateContent$/i.test(clean)) return clean;
+  if (/\/models$/i.test(clean)) return `${clean}/${encodeURIComponent(model)}:generateContent`;
+  return `${clean}/models/${encodeURIComponent(model)}:generateContent`;
+}
+
+function buildClaudeUrl(endpoint) {
+  const clean = endpoint.trim().replace(/\/+$/, "");
+  if (/\/messages$/i.test(clean)) return clean;
+  return `${clean}/messages`;
+}
+
+export function buildProviderRequest(content, settings) {
+  const prompt = `請潤飾以下文字。只回傳潤飾結果：\n\n${content}`;
+
+  if (settings.provider === "gemini") {
+    return {
+      url: buildGeminiUrl(settings.endpoint, settings.model),
+      options: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": settings.apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: settings.systemPrompt }],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            maxOutputTokens: 4096,
+          },
+        }),
+      },
+    };
+  }
+
+  if (settings.provider === "claude") {
+    return {
+      url: buildClaudeUrl(settings.endpoint),
+      options: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": settings.apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: settings.model,
+          max_tokens: 4096,
+          system: settings.systemPrompt,
+          messages: [
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      },
+    };
+  }
+
+  return {
+    url: buildResponsesUrl(settings.endpoint),
+    options: {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${settings.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        instructions: settings.systemPrompt,
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+        reasoning: { effort: settings.reasoningEffort },
+        service_tier: settings.serviceTier,
+        max_output_tokens: 4096,
+      }),
+    },
+  };
+}
+
 export function extractResponseText(data) {
   if (typeof data?.output_text === "string" && data.output_text.trim()) {
     return data.output_text.trim();
@@ -55,6 +197,31 @@ export function extractResponseText(data) {
   const result = texts.join("\n").trim();
   if (!result) throw new Error("API 已回應，但找不到可用的文字內容。");
   return result;
+}
+
+export function extractProviderText(provider, data) {
+  if (provider === "gemini") {
+    const result = (data?.candidates ?? [])
+      .flatMap((candidate) => candidate?.content?.parts ?? [])
+      .filter((part) => !part?.thought && typeof part?.text === "string")
+      .map((part) => part.text)
+      .join("\n")
+      .trim();
+    if (result) return result;
+    throw new Error("Gemini 已回應，但找不到可用的文字內容。");
+  }
+
+  if (provider === "claude") {
+    const result = (data?.content ?? [])
+      .filter((item) => item?.type === "text" && typeof item?.text === "string")
+      .map((item) => item.text)
+      .join("\n")
+      .trim();
+    if (result) return result;
+    throw new Error("Claude 已回應，但找不到可用的文字內容。");
+  }
+
+  return extractResponseText(data);
 }
 
 export function cleanModelOutput(text) {

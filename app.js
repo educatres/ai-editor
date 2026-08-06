@@ -1,12 +1,16 @@
 import {
-  buildResponsesUrl,
-  extractResponseText,
+  PROVIDERS,
+  buildProviderRequest,
+  extractProviderText,
   findPolishBlocks,
+  getProvider,
   renderPolishedDocument,
-} from "./core.js?v=2";
+} from "./core.js?v=3";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
+  provider: "cguAiEditor.provider",
+  providerConfigs: "cguAiEditor.providerConfigs",
   apiKey: "cguAiEditor.apiKey",
   endpoint: "cguAiEditor.endpoint",
   model: "cguAiEditor.model",
@@ -14,8 +18,7 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULTS = {
-  endpoint: "https://air.cgu.edu.tw/cgullmapi/v1",
-  model: "gpt-5.6-luna",
+  provider: "cgu",
   reasoningEffort: "medium",
   serviceTier: "default",
   systemPrompt: [
@@ -38,13 +41,18 @@ const elements = {
   promptDialog: document.querySelector("#promptDialog"),
   settingsForm: document.querySelector("#settingsForm"),
   promptForm: document.querySelector("#promptForm"),
+  provider: document.querySelector("#provider"),
   apiKey: document.querySelector("#apiKey"),
   endpoint: document.querySelector("#endpoint"),
   model: document.querySelector("#model"),
+  providerHint: document.querySelector("#providerHint"),
   systemPrompt: document.querySelector("#systemPrompt"),
   toggleKeyBtn: document.querySelector("#toggleKeyBtn"),
   resetPromptBtn: document.querySelector("#resetPromptBtn"),
 };
+
+let activeProvider = DEFAULTS.provider;
+let providerConfigs = {};
 
 function loadValue(key, fallback = "") {
   try {
@@ -66,10 +74,66 @@ function removeAppStorage() {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
 }
 
+function loadProviderConfigs() {
+  try {
+    const stored = JSON.parse(loadValue(STORAGE_KEYS.providerConfigs, "{}"));
+    providerConfigs = stored && typeof stored === "object" ? stored : {};
+  } catch {
+    providerConfigs = {};
+  }
+
+  if (!providerConfigs.cgu) {
+    const definition = PROVIDERS.cgu;
+    providerConfigs.cgu = {
+      apiKey: loadValue(STORAGE_KEYS.apiKey, ""),
+      endpoint: loadValue(STORAGE_KEYS.endpoint, definition.endpoint),
+      model: loadValue(STORAGE_KEYS.model, definition.models[0]),
+    };
+  }
+}
+
+function getProviderConfig(providerId) {
+  const definition = getProvider(providerId);
+  const stored = providerConfigs[providerId] ?? {};
+  return {
+    apiKey: stored.apiKey ?? "",
+    endpoint: stored.endpoint || definition.endpoint,
+    model: definition.models.includes(stored.model) ? stored.model : definition.models[0],
+  };
+}
+
+function captureProviderConfig() {
+  providerConfigs[activeProvider] = {
+    apiKey: elements.apiKey.value.trim(),
+    endpoint: elements.endpoint.value.trim().replace(/\/+$/, ""),
+    model: elements.model.value,
+  };
+}
+
+function renderProvider(providerId) {
+  const definition = getProvider(providerId);
+  const config = getProviderConfig(providerId);
+  activeProvider = providerId;
+  elements.provider.value = providerId;
+  elements.apiKey.value = config.apiKey;
+  elements.endpoint.value = config.endpoint;
+  elements.model.replaceChildren(
+    ...definition.models.map((model) => {
+      const option = document.createElement("option");
+      option.value = model;
+      option.textContent = model;
+      return option;
+    }),
+  );
+  elements.model.value = config.model;
+  elements.providerHint.textContent = definition.hint;
+}
+
 function getSettings() {
   return {
+    provider: activeProvider,
     apiKey: elements.apiKey.value.trim(),
-    endpoint: (elements.endpoint.value.trim() || DEFAULTS.endpoint).replace(/\/+$/, ""),
+    endpoint: (elements.endpoint.value.trim() || getProvider(activeProvider).endpoint).replace(/\/+$/, ""),
     model: elements.model.value,
     systemPrompt: elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt,
     reasoningEffort: DEFAULTS.reasoningEffort,
@@ -79,22 +143,17 @@ function getSettings() {
 
 function loadState() {
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
-  elements.apiKey.value = loadValue(STORAGE_KEYS.apiKey, "");
-  elements.endpoint.value = loadValue(STORAGE_KEYS.endpoint, DEFAULTS.endpoint);
-
-  const storedModel = loadValue(STORAGE_KEYS.model, DEFAULTS.model);
-  elements.model.value = ["gpt-5.6-luna", "gpt-5.6-sol"].includes(storedModel)
-    ? storedModel
-    : DEFAULTS.model;
-
+  loadProviderConfigs();
+  const storedProvider = loadValue(STORAGE_KEYS.provider, DEFAULTS.provider);
+  renderProvider(PROVIDERS[storedProvider] ? storedProvider : DEFAULTS.provider);
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
 }
 
 function saveSettings() {
   const settings = getSettings();
-  saveValue(STORAGE_KEYS.apiKey, settings.apiKey);
-  saveValue(STORAGE_KEYS.endpoint, settings.endpoint || DEFAULTS.endpoint);
-  saveValue(STORAGE_KEYS.model, settings.model);
+  captureProviderConfig();
+  saveValue(STORAGE_KEYS.provider, activeProvider);
+  saveValue(STORAGE_KEYS.providerConfigs, JSON.stringify(providerConfigs));
   saveValue(STORAGE_KEYS.systemPrompt, settings.systemPrompt);
 }
 
@@ -112,31 +171,8 @@ function setBusy(busy) {
 }
 
 async function polishText(content, settings) {
-  const response = await fetch(buildResponsesUrl(settings.endpoint), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${settings.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: settings.model,
-      instructions: settings.systemPrompt,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: `請潤飾以下文字。只回傳潤飾結果：\n\n${content}`,
-            },
-          ],
-        },
-      ],
-      reasoning: { effort: settings.reasoningEffort },
-      service_tier: settings.serviceTier,
-      max_output_tokens: 4096,
-    }),
-  });
+  const request = buildProviderRequest(content, settings);
+  const response = await fetch(request.url, request.options);
 
   const rawText = await response.text();
   let data;
@@ -151,7 +187,7 @@ async function polishText(content, settings) {
     throw new Error(`${response.status}：${detail}`);
   }
 
-  return extractResponseText(data);
+  return extractProviderText(settings.provider, data);
 }
 
 function validateSettings(settings) {
@@ -228,11 +264,11 @@ function clearRecords() {
   if (!confirmed) return;
 
   removeAppStorage();
+  providerConfigs = {};
+  activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
-  elements.apiKey.value = "";
-  elements.endpoint.value = DEFAULTS.endpoint;
-  elements.model.value = DEFAULTS.model;
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
+  renderProvider(DEFAULTS.provider);
 }
 
 let saveTimer;
@@ -244,6 +280,10 @@ elements.editor.addEventListener("input", () => {
 });
 
 elements.settingsBtn.addEventListener("click", () => elements.settingsDialog.showModal());
+elements.provider.addEventListener("change", () => {
+  captureProviderConfig();
+  renderProvider(elements.provider.value);
+});
 elements.promptBtn.addEventListener("click", () => elements.promptDialog.showModal());
 elements.polishBtn.addEventListener("click", runPolish);
 elements.copyBtn.addEventListener("click", copyEditor);

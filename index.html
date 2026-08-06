@@ -37,9 +37,19 @@
       </div>
 
       <label>
+        供應商
+        <select id="provider">
+          <option value="cgu">CGU（現有）</option>
+          <option value="openai">ChatGPT（OpenAI API）</option>
+          <option value="gemini">Gemini（Google AI）</option>
+          <option value="claude">Claude（Anthropic API）</option>
+        </select>
+      </label>
+
+      <label>
         API Key
         <div class="key-row">
-          <input id="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+          <input id="apiKey" type="password" autocomplete="off" placeholder="輸入所選供應商的 API Key">
           <button id="toggleKeyBtn" type="button">顯示</button>
         </div>
       </label>
@@ -51,13 +61,10 @@
 
       <label>
         模型
-        <select id="model">
-          <option value="gpt-5.6-luna">gpt-5.6-luna</option>
-          <option value="gpt-5.6-sol">gpt-5.6-sol</option>
-        </select>
+        <select id="model"></select>
       </label>
 
-      <p class="hint">推理強度：中（medium）｜速度：標準（default）</p>
+      <p class="hint" id="providerHint"></p>
       <p class="warning">API Key 與文章會保存在此瀏覽器的 LocalStorage。請勿在共用裝置使用。</p>
 
       <div class="dialog-actions">
@@ -87,6 +94,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>
