@@ -28,11 +28,19 @@ const results = new Map([
 ]);
 assert.equal(
   renderPolishedDocument(sample, blocks, results),
-  "前文\n原文一\n# 潤飾一\n中段 原文二 後段\n# 潤飾二\n結尾",
+  "前文\n# 原文一\n潤飾一\n中段 # 原文二 後段\n潤飾二\n結尾",
 );
 
 assert.equal(formatAsCommentLines("第一行\n\n第二行"), "# 第一行\n#\n# 第二行");
-assert.equal(formatAsCommentLines("```text\n結果：修正版\n```"), "# 修正版");
+assert.equal(formatAsCommentLines("結果：原文"), "# 結果：原文");
+
+const multilineSample = "開頭\n{{第一行\n\n第二行}}\n結尾";
+const multilineBlocks = findPolishBlocks(multilineSample);
+const multilineResults = new Map([[multilineBlocks[0].start, "```text\n結果：新版第一行\n新版第二行\n```"]]);
+const multilineOutput = renderPolishedDocument(multilineSample, multilineBlocks, multilineResults);
+assert.equal(multilineOutput, "開頭\n# 第一行\n#\n# 第二行\n新版第一行\n新版第二行\n結尾");
+assert.equal(multilineOutput.includes("{{"), false);
+assert.equal(multilineOutput.includes("}}"), false);
 assert.equal(extractResponseText({ output_text: "完成" }), "完成");
 assert.equal(
   extractResponseText({ output: [{ content: [{ type: "output_text", text: "完成二" }] }] }),

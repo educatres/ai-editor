@@ -65,7 +65,8 @@ export function cleanModelOutput(text) {
 }
 
 export function formatAsCommentLines(text) {
-  return cleanModelOutput(text)
+  return text
+    .trim()
     .split(/\r?\n/)
     .map((line) => (line.trim() ? `# ${line}` : "#"))
     .join("\n");
@@ -82,7 +83,7 @@ export function renderPolishedDocument(originalText, blocks, results) {
     const lineBreak = originalText.indexOf("\n", block.end);
     const insertionPoint = lineBreak === -1 ? originalText.length : lineBreak + 1;
     const items = insertions.get(insertionPoint) ?? [];
-    items.push(formatAsCommentLines(result));
+    items.push(cleanModelOutput(result));
     insertions.set(insertionPoint, items);
   }
 
@@ -101,7 +102,7 @@ export function renderPolishedDocument(originalText, blocks, results) {
 
     const block = blockByStart.get(index);
     if (block) {
-      output += block.content;
+      output += formatAsCommentLines(block.content);
       index = block.end;
       continue;
     }
