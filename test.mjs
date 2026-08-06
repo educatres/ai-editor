@@ -11,6 +11,7 @@ import {
   renderPolishedDocument,
   unescapeSpecialBraces,
 } from "./core.js";
+import { PROMPT_PRESETS, appendPromptText } from "./prompt-presets.js";
 
 assert.equal(
   buildResponsesUrl("https://air.cgu.edu.tw/cgullmapi/v1/"),
@@ -131,6 +132,15 @@ assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 5, 1), { start: 11
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 16, 1), { start: 0, end: 5 });
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", -1, -1), { start: 11, end: 16 });
 assert.equal(findSearchMatch("Alpha", "missing", 0, 1), null);
+
+assert.equal(PROMPT_PRESETS.general.content.startsWith("你是繁體中文文字編輯助手。"), true);
+assert.equal(PROMPT_PRESETS.codex.content.includes("## 基本原則"), true);
+assert.equal(PROMPT_PRESETS.codex.content.includes("### 十二、完成後交付內容"), true);
+assert.equal(
+  appendPromptText("既有內容", PROMPT_PRESETS.general.content),
+  `既有內容\n\n${PROMPT_PRESETS.general.content}`,
+);
+assert.equal(appendPromptText("", PROMPT_PRESETS.general.content), PROMPT_PRESETS.general.content);
 
 assert.equal(extractResponseText({ output_text: "完成" }), "完成");
 assert.equal(

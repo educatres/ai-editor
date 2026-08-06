@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check app.js && node --check core.js && node test.mjs",
+    "check": "node --check app.js && node --check core.js && node --check prompt-presets.js && node test.mjs",
     "serve": "python3 -m http.server 8080"
   }
 }

@@ -123,6 +123,18 @@ input, select, .dialog-form textarea {
 
 .dialog-form textarea { resize: vertical; line-height: 1.5; }
 
+.prompt-presets {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .key-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

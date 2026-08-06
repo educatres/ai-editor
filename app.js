@@ -8,6 +8,7 @@ import {
   renderPolishedDocument,
   unescapeSpecialBraces,
 } from "./core.js?v=4";
+import { PROMPT_PRESETS, appendPromptText } from "./prompt-presets.js?v=1";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
@@ -29,12 +30,7 @@ const DEFAULTS = {
   fontSizeStep: 2,
   reasoningEffort: "medium",
   serviceTier: "default",
-  systemPrompt: [
-    "你是繁體中文文字編輯助手。",
-    "請在不改變原意、不新增未提供事實的前提下，將文字潤飾得通順、精簡、清楚。",
-    "保留原文的專有名詞、數字、格式與語氣層級。",
-    "只輸出潤飾後的文字，不要加入標題、說明、引號或 Markdown 程式碼框。",
-  ].join("\n"),
+  systemPrompt: PROMPT_PRESETS.general.content,
 };
 
 const elements = {
@@ -63,7 +59,8 @@ const elements = {
   providerHint: document.querySelector("#providerHint"),
   systemPrompt: document.querySelector("#systemPrompt"),
   toggleKeyBtn: document.querySelector("#toggleKeyBtn"),
-  resetPromptBtn: document.querySelector("#resetPromptBtn"),
+  appendGeneralPromptBtn: document.querySelector("#appendGeneralPromptBtn"),
+  appendCodexPromptBtn: document.querySelector("#appendCodexPromptBtn"),
 };
 
 let activeProvider = DEFAULTS.provider;
@@ -307,6 +304,14 @@ function changeFontSize(delta) {
   elements.editor.focus();
 }
 
+function appendPromptPreset(preset) {
+  elements.systemPrompt.value = appendPromptText(elements.systemPrompt.value, preset.content);
+  elements.systemPrompt.focus();
+  const end = elements.systemPrompt.value.length;
+  elements.systemPrompt.setSelectionRange(end, end);
+  elements.systemPrompt.scrollTop = elements.systemPrompt.scrollHeight;
+}
+
 function downloadEditor() {
   const blob = new Blob([elements.editor.value], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -377,8 +382,12 @@ elements.promptForm.addEventListener("submit", () => {
   saveValue(STORAGE_KEYS.systemPrompt, elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt);
 });
 
-elements.resetPromptBtn.addEventListener("click", () => {
-  elements.systemPrompt.value = DEFAULTS.systemPrompt;
+elements.appendGeneralPromptBtn.addEventListener("click", () => {
+  appendPromptPreset(PROMPT_PRESETS.general);
+});
+
+elements.appendCodexPromptBtn.addEventListener("click", () => {
+  appendPromptPreset(PROMPT_PRESETS.codex);
 });
 
 elements.toggleKeyBtn.addEventListener("click", () => {

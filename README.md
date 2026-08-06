@@ -10,6 +10,7 @@
 - 各供應商分別保存 API Key、Endpoint 與模型
 - 支援 OpenAI Responses、Gemini generateContent 與 Claude Messages API
 - 自訂 System prompt
+- System prompt 提供「通用」與「Codex 開發」範例，可追加到既有文字下方而不覆蓋
 - 多組 `{{ }}` 依序潤飾
 - 支援 `\{`、`\}` 兩種大括號跳脫，完成後只移除這兩種反斜線
 - 搜尋上一個／下一個字串並在編輯器反白

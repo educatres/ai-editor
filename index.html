@@ -102,19 +102,26 @@
         <button type="button" class="icon-btn" data-close="promptDialog" aria-label="關閉">×</button>
       </div>
 
+      <div class="prompt-presets">
+        <span>範例（追加到現有文字下方）</span>
+        <div class="preset-actions">
+          <button id="appendGeneralPromptBtn" type="button">通用</button>
+          <button id="appendCodexPromptBtn" type="button">Codex 開發</button>
+        </div>
+      </div>
+
       <label>
         提示詞
-        <textarea id="systemPrompt" rows="9"></textarea>
+        <textarea id="systemPrompt" rows="14"></textarea>
       </label>
 
       <div class="dialog-actions">
-        <button id="resetPromptBtn" type="button">恢復預設</button>
         <button type="button" data-close="promptDialog">取消</button>
         <button type="submit" class="primary">儲存</button>
       </div>
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body>
 </html>
