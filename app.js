@@ -3,7 +3,7 @@ import {
   extractResponseText,
   findPolishBlocks,
   renderPolishedDocument,
-} from "./core.js";
+} from "./core.js?v=2";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
