@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>AI 文字潤飾</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="toolbar" aria-label="工具列">
+      <strong class="title">AI 文字潤飾</strong>
+      <div class="toolbar-actions">
+        <button id="settingsBtn" type="button">API</button>
+        <button id="promptBtn" type="button">System prompt</button>
+        <button id="copyBtn" type="button">複製</button>
+        <button id="downloadBtn" type="button">下載</button>
+        <button id="clearBtn" type="button" class="danger">清除記錄</button>
+        <button id="polishBtn" type="button" class="primary">潤飾</button>
+      </div>
+    </header>
+
+    <section class="statusbar" aria-live="polite">
+      <span id="statusText">使用 {{ }} 標記要潤飾的文字</span>
+      <span id="configSummary"></span>
+    </section>
+
+    <textarea
+      id="editor"
+      aria-label="文字編輯器"
+      spellcheck="true"
+      placeholder="在此輸入文字，並以 {{ 要潤飾的內容 }} 標記。"
+    ></textarea>
+  </main>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-form" id="settingsForm">
+      <div class="dialog-head">
+        <strong>API 設定</strong>
+        <button type="button" class="icon-btn" data-close="settingsDialog" aria-label="關閉">×</button>
+      </div>
+
+      <label>
+        API Key
+        <div class="key-row">
+          <input id="apiKey" type="password" autocomplete="off" placeholder="sk-...">
+          <button id="toggleKeyBtn" type="button">顯示</button>
+        </div>
+      </label>
+
+      <label>
+        Endpoint
+        <input id="endpoint" type="url" inputmode="url">
+      </label>
+
+      <label>
+        模型
+        <select id="model">
+          <option value="gpt-5.6-luna">gpt-5.6-luna</option>
+          <option value="gpt-5.6-sol">gpt-5.6-sol</option>
+        </select>
+      </label>
+
+      <p class="hint">推理強度：中（medium）｜速度：標準（default）</p>
+      <p class="warning">API Key 與文章會保存在此瀏覽器的 LocalStorage。請勿在共用裝置使用。</p>
+
+      <div class="dialog-actions">
+        <button type="button" data-close="settingsDialog">取消</button>
+        <button id="saveSettingsBtn" type="submit" class="primary">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="promptDialog">
+    <form method="dialog" class="dialog-form" id="promptForm">
+      <div class="dialog-head">
+        <strong>System prompt</strong>
+        <button type="button" class="icon-btn" data-close="promptDialog" aria-label="關閉">×</button>
+      </div>
+
+      <label>
+        提示詞
+        <textarea id="systemPrompt" rows="9"></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button id="resetPromptBtn" type="button">恢復預設</button>
+        <button type="button" data-close="promptDialog">取消</button>
+        <button type="submit" class="primary">儲存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
