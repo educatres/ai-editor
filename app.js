@@ -3,9 +3,11 @@ import {
   buildProviderRequest,
   extractProviderText,
   findPolishBlocks,
+  findSearchMatch,
   getProvider,
   renderPolishedDocument,
-} from "./core.js?v=3";
+  unescapeSpecialBraces,
+} from "./core.js?v=4";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
@@ -15,10 +17,16 @@ const STORAGE_KEYS = {
   endpoint: "cguAiEditor.endpoint",
   model: "cguAiEditor.model",
   systemPrompt: "cguAiEditor.systemPrompt",
+  searchTerm: "cguAiEditor.searchTerm",
+  fontSize: "cguAiEditor.fontSize",
 };
 
 const DEFAULTS = {
   provider: "cgu",
+  fontSize: 16,
+  minFontSize: 12,
+  maxFontSize: 32,
+  fontSizeStep: 2,
   reasoningEffort: "medium",
   serviceTier: "default",
   systemPrompt: [
@@ -35,12 +43,19 @@ const elements = {
   settingsBtn: document.querySelector("#settingsBtn"),
   promptBtn: document.querySelector("#promptBtn"),
   copyBtn: document.querySelector("#copyBtn"),
+  searchBtn: document.querySelector("#searchBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
+  zoomInBtn: document.querySelector("#zoomInBtn"),
+  zoomOutBtn: document.querySelector("#zoomOutBtn"),
   clearBtn: document.querySelector("#clearBtn"),
+  searchDialog: document.querySelector("#searchDialog"),
   settingsDialog: document.querySelector("#settingsDialog"),
   promptDialog: document.querySelector("#promptDialog"),
+  searchForm: document.querySelector("#searchForm"),
   settingsForm: document.querySelector("#settingsForm"),
   promptForm: document.querySelector("#promptForm"),
+  searchInput: document.querySelector("#searchInput"),
+  searchPrevBtn: document.querySelector("#searchPrevBtn"),
   provider: document.querySelector("#provider"),
   apiKey: document.querySelector("#apiKey"),
   endpoint: document.querySelector("#endpoint"),
@@ -53,6 +68,7 @@ const elements = {
 
 let activeProvider = DEFAULTS.provider;
 let providerConfigs = {};
+let editorFontSize = DEFAULTS.fontSize;
 
 function loadValue(key, fallback = "") {
   try {
@@ -141,12 +157,26 @@ function getSettings() {
   };
 }
 
+function applyFontSize(value, persist = true) {
+  const numeric = Number(value);
+  editorFontSize = Math.min(
+    DEFAULTS.maxFontSize,
+    Math.max(DEFAULTS.minFontSize, Number.isFinite(numeric) ? numeric : DEFAULTS.fontSize),
+  );
+  document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
+  elements.zoomInBtn.disabled = editorFontSize >= DEFAULTS.maxFontSize;
+  elements.zoomOutBtn.disabled = editorFontSize <= DEFAULTS.minFontSize;
+  if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
+}
+
 function loadState() {
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
   loadProviderConfigs();
   const storedProvider = loadValue(STORAGE_KEYS.provider, DEFAULTS.provider);
   renderProvider(PROVIDERS[storedProvider] ? storedProvider : DEFAULTS.provider);
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
+  elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
+  applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
 }
 
 function saveSettings() {
@@ -166,6 +196,7 @@ function setBusy(busy) {
   elements.editor.disabled = busy;
   elements.settingsBtn.disabled = busy;
   elements.promptBtn.disabled = busy;
+  elements.searchBtn.disabled = busy;
   elements.clearBtn.disabled = busy;
   elements.polishBtn.textContent = busy ? "潤飾中…" : "潤飾";
 }
@@ -223,7 +254,7 @@ async function runPolish() {
     const results = new Map();
     for (let index = 0; index < nonEmptyBlocks.length; index += 1) {
       const block = nonEmptyBlocks[index];
-      const result = await polishText(block.content.trim(), settings);
+      const result = await polishText(unescapeSpecialBraces(block.content.trim()), settings);
       results.set(block.start, result);
     }
 
@@ -248,6 +279,34 @@ async function copyEditor() {
   }
 }
 
+function runSearch(direction = 1) {
+  const query = elements.searchInput.value;
+  if (!query) {
+    reportError("請輸入要搜尋的字串。");
+    return;
+  }
+
+  const startIndex = direction < 0
+    ? elements.editor.selectionStart - 1
+    : elements.editor.selectionEnd;
+  const match = findSearchMatch(elements.editor.value, query, startIndex, direction);
+
+  if (!match) {
+    reportError(`找不到「${query}」。`);
+    return;
+  }
+
+  saveValue(STORAGE_KEYS.searchTerm, query);
+  elements.searchDialog.close();
+  elements.editor.focus();
+  elements.editor.setSelectionRange(match.start, match.end);
+}
+
+function changeFontSize(delta) {
+  applyFontSize(editorFontSize + delta);
+  elements.editor.focus();
+}
+
 function downloadEditor() {
   const blob = new Blob([elements.editor.value], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -260,15 +319,17 @@ function downloadEditor() {
 }
 
 function clearRecords() {
-  const confirmed = window.confirm("確定清除文章、API Key、Endpoint、模型與 System prompt？");
+  const confirmed = window.confirm("確定清除文章、API 設定、搜尋字串、字體大小與 System prompt？");
   if (!confirmed) return;
 
   removeAppStorage();
   providerConfigs = {};
   activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
+  elements.searchInput.value = "";
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   renderProvider(DEFAULTS.provider);
+  applyFontSize(DEFAULTS.fontSize, false);
 }
 
 let saveTimer;
@@ -279,7 +340,16 @@ elements.editor.addEventListener("input", () => {
   }, 250);
 });
 
+elements.searchInput.addEventListener("input", () => {
+  saveValue(STORAGE_KEYS.searchTerm, elements.searchInput.value);
+});
+
 elements.settingsBtn.addEventListener("click", () => elements.settingsDialog.showModal());
+elements.searchBtn.addEventListener("click", () => {
+  elements.searchDialog.showModal();
+  elements.searchInput.focus();
+  elements.searchInput.select();
+});
 elements.provider.addEventListener("change", () => {
   captureProviderConfig();
   renderProvider(elements.provider.value);
@@ -288,7 +358,16 @@ elements.promptBtn.addEventListener("click", () => elements.promptDialog.showMod
 elements.polishBtn.addEventListener("click", runPolish);
 elements.copyBtn.addEventListener("click", copyEditor);
 elements.downloadBtn.addEventListener("click", downloadEditor);
+elements.zoomInBtn.addEventListener("click", () => changeFontSize(DEFAULTS.fontSizeStep));
+elements.zoomOutBtn.addEventListener("click", () => changeFontSize(-DEFAULTS.fontSizeStep));
 elements.clearBtn.addEventListener("click", clearRecords);
+
+elements.searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  runSearch(1);
+});
+
+elements.searchPrevBtn.addEventListener("click", () => runSearch(-1));
 
 elements.settingsForm.addEventListener("submit", () => {
   saveSettings();

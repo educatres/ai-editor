@@ -1,10 +1,12 @@
 export function findPolishBlocks(text) {
   const blocks = [];
-  const tokenPattern = /\{\{|\}\}/g;
+  const tokenPattern = /\\[{}]|\{\{|\}\}/g;
   let openIndex = null;
   let match;
 
   while ((match = tokenPattern.exec(text)) !== null) {
+    if (match[0][0] === "\\") continue;
+
     if (match[0] === "{{") {
       if (openIndex !== null) {
         throw new Error("偵測到巢狀或重複的 {{，請檢查標記。");
@@ -30,6 +32,31 @@ export function findPolishBlocks(text) {
   }
 
   return blocks;
+}
+
+export function unescapeSpecialBraces(text) {
+  return text.replace(/\\([{}])/g, "$1");
+}
+
+export function findSearchMatch(text, query, startIndex = 0, direction = 1) {
+  if (!query) return null;
+  const haystack = text.toLocaleLowerCase();
+  const needle = query.toLocaleLowerCase();
+  let index;
+
+  if (direction < 0) {
+    const from = startIndex < 0
+      ? Math.max(0, haystack.length - 1)
+      : Math.min(startIndex, Math.max(0, haystack.length - 1));
+    index = haystack.lastIndexOf(needle, from);
+    if (index === -1) index = haystack.lastIndexOf(needle);
+  } else {
+    const from = Math.min(Math.max(0, startIndex), haystack.length);
+    index = haystack.indexOf(needle, from);
+    if (index === -1 && from > 0) index = haystack.indexOf(needle);
+  }
+
+  return index === -1 ? null : { start: index, end: index + query.length };
 }
 
 export function buildResponsesUrl(endpoint) {
@@ -278,5 +305,5 @@ export function renderPolishedDocument(originalText, blocks, results) {
     index += 1;
   }
 
-  return output;
+  return unescapeSpecialBraces(output);
 }

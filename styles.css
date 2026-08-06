@@ -5,6 +5,7 @@
   --muted: #666;
   --danger: #a32020;
   --primary: #111;
+  --editor-font-size: 16px;
 }
 
 * { box-sizing: border-box; }
@@ -37,17 +38,11 @@ button { cursor: pointer; }
 }
 .toolbar::-webkit-scrollbar { display: none; }
 
-.title {
-  flex: 0 0 auto;
-  margin-right: auto;
-  font-size: 15px;
-  white-space: nowrap;
-}
-
 .toolbar-actions {
   display: flex;
   gap: 5px;
   flex: 0 0 auto;
+  width: max-content;
 }
 
 button {
@@ -75,7 +70,7 @@ button.danger { color: var(--danger); }
   padding: 12px;
   background: #fff;
   color: #111;
-  font: 16px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font: var(--editor-font-size)/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
   tab-size: 2;
 }
 
@@ -150,17 +145,5 @@ input, select, .dialog-form textarea {
 }
 
 @media (max-width: 640px) {
-  .toolbar {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .title { display: none; }
-  .toolbar-actions {
-    width: max-content;
-    min-width: 100%;
-  }
-
-  #editor { padding: 10px; font-size: 16px; }
+  #editor { padding: 10px; }
 }

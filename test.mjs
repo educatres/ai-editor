@@ -6,8 +6,10 @@ import {
   extractProviderText,
   extractResponseText,
   findPolishBlocks,
+  findSearchMatch,
   formatAsCommentLines,
   renderPolishedDocument,
+  unescapeSpecialBraces,
 } from "./core.js";
 
 assert.equal(
@@ -104,6 +106,32 @@ const multilineOutput = renderPolishedDocument(multilineSample, multilineBlocks,
 assert.equal(multilineOutput, "開頭\n# 第一行\n#\n# 第二行\n新版第一行\n新版第二行\n結尾");
 assert.equal(multilineOutput.includes("{{"), false);
 assert.equal(multilineOutput.includes("}}"), false);
+
+const escapedSample = String.raw`字面 \{\{不是標記\}\}
+{{內容 \{大括號\} 與路徑 C:\temp}}`;
+const escapedBlocks = findPolishBlocks(escapedSample);
+assert.equal(escapedBlocks.length, 1);
+assert.equal(escapedBlocks[0].content, String.raw`內容 \{大括號\} 與路徑 C:\temp`);
+const escapedResults = new Map([
+  [escapedBlocks[0].start, String.raw`完成 \{結果\} 與 C:\new`],
+]);
+assert.equal(
+  renderPolishedDocument(escapedSample, escapedBlocks, escapedResults),
+  String.raw`字面 {{不是標記}}
+# 內容 {大括號} 與路徑 C:\temp
+完成 {結果} 與 C:\new`,
+);
+assert.equal(
+  unescapeSpecialBraces(String.raw`\{文字\} \n \* \\`),
+  String.raw`{文字} \n \* \\`,
+);
+
+assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 0, 1), { start: 0, end: 5 });
+assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 5, 1), { start: 11, end: 16 });
+assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 16, 1), { start: 0, end: 5 });
+assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", -1, -1), { start: 11, end: 16 });
+assert.equal(findSearchMatch("Alpha", "missing", 0, 1), null);
+
 assert.equal(extractResponseText({ output_text: "完成" }), "完成");
 assert.equal(
   extractResponseText({ output: [{ content: [{ type: "output_text", text: "完成二" }] }] }),

@@ -4,20 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
-  <title>AI 文字潤飾</title>
+  <title>AI Editor</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main class="app">
     <header class="toolbar" aria-label="工具列">
-      <strong class="title">AI 文字潤飾</strong>
       <div class="toolbar-actions">
-        <button id="settingsBtn" type="button">API</button>
-        <button id="promptBtn" type="button">System prompt</button>
-        <button id="copyBtn" type="button">複製</button>
-        <button id="downloadBtn" type="button">下載</button>
-        <button id="clearBtn" type="button" class="danger">清除記錄</button>
         <button id="polishBtn" type="button" class="primary">潤飾</button>
+        <button id="copyBtn" type="button">複製</button>
+        <button id="searchBtn" type="button">Search</button>
+        <button id="promptBtn" type="button">System prompt</button>
+        <button id="downloadBtn" type="button">下載</button>
+        <button id="zoomInBtn" type="button">放大</button>
+        <button id="zoomOutBtn" type="button">縮小</button>
+        <button id="settingsBtn" type="button">API</button>
+        <button id="clearBtn" type="button" class="danger">清除記錄</button>
       </div>
     </header>
 
@@ -28,6 +30,25 @@
       placeholder="在此輸入文字，並以 {{ 要潤飾的內容 }} 標記。"
     ></textarea>
   </main>
+
+  <dialog id="searchDialog">
+    <form class="dialog-form" id="searchForm">
+      <div class="dialog-head">
+        <strong>搜尋</strong>
+        <button type="button" class="icon-btn" data-close="searchDialog" aria-label="關閉">×</button>
+      </div>
+
+      <label>
+        搜尋字串
+        <input id="searchInput" type="search" autocomplete="off">
+      </label>
+
+      <div class="dialog-actions">
+        <button id="searchPrevBtn" type="button">上一個</button>
+        <button type="submit" class="primary">下一個</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="settingsDialog">
     <form method="dialog" class="dialog-form" id="settingsForm">
@@ -94,6 +115,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body>
 </html>
