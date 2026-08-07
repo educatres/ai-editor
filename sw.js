@@ -1,9 +1,9 @@
-const CACHE_NAME = "ai-editor-pwa-v2";
+const CACHE_NAME = "ai-editor-pwa-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css?v=25",
-  "./app.js?v=39",
+  "./app.js?v=40",
   "./core.js?v=9",
   "./prompt-presets.js?v=3",
   "./manifest.webmanifest",

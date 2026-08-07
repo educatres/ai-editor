@@ -58,6 +58,7 @@ const elements = {
   settingsBtn: document.querySelector("#settingsBtn"),
   copyBtn: document.querySelector("#copyBtn"),
   searchBtn: document.querySelector("#searchBtn"),
+  refreshBtn: document.querySelector("#refreshBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
   zoomInBtn: document.querySelector("#zoomInBtn"),
   zoomOutBtn: document.querySelector("#zoomOutBtn"),
@@ -1081,6 +1082,7 @@ elements.modeBtn.addEventListener("click", () => {
 });
 elements.polishBtn.addEventListener("click", runPolish);
 elements.copyBtn.addEventListener("click", copyEditor);
+elements.refreshBtn.addEventListener("click", () => window.location.reload());
 elements.downloadBtn.addEventListener("click", downloadEditor);
 elements.zoomInBtn.addEventListener("click", () => changeFontSize(DEFAULTS.fontSizeStep));
 elements.zoomOutBtn.addEventListener("click", () => changeFontSize(-DEFAULTS.fontSizeStep));

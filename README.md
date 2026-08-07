@@ -28,7 +28,7 @@
 - 可切換依螢幕寬度自動換行，且不改變複製或下載的原始文字
 - 文章、API、模型、搜尋、字體與提示詞設定自動保存至 LocalStorage
 - 工具列以「已用容量」顯示 LocalStorage 使用量的估算百分比
-- API 設定框內可下載 Markdown，或清除所有本機記錄
+- API 設定框內可重新整理網頁、下載 Markdown，或清除所有本機記錄
 - 複製全文
 - 手機版精簡介面
 - 支援 Android、iPhone 與 iPad 安裝為 PWA，並提供離線 App Shell
