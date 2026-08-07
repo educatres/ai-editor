@@ -724,25 +724,12 @@ function handleArrowSelection(event) {
   const expectedSelection = getExtendedSelection(arrowKey, start, end, direction);
   if (!expectedSelection) return;
 
-  if (!event.shiftKey && physicalShiftPressed) {
-    event.preventDefault();
-    applySelection(expectedSelection);
-    return;
-  }
-
-  window.requestAnimationFrame(() => {
-    const currentStart = elements.editor.selectionStart;
-    const currentEnd = elements.editor.selectionEnd;
-    const matchesExpected = currentStart === expectedSelection.start
-      && currentEnd === expectedSelection.end;
-    if (matchesExpected) return;
-
-    const nativeChangedSelection = currentStart !== currentEnd
-      && (currentStart !== start || currentEnd !== end);
-    if (nativeChangedSelection) return;
-
-    applySelection(expectedSelection);
-  });
+  event.preventDefault();
+  applySelection(expectedSelection);
+  const focus = expectedSelection.direction === "backward"
+    ? expectedSelection.start
+    : expectedSelection.end;
+  scrollNavigationOffsetIntoView(focus, arrowKey);
 }
 
 function applyWordWrap(enabled, persist = true) {
