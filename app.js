@@ -149,6 +149,22 @@ function updateLocalStorageUsage() {
   elements.storageUsage.title = `估算已使用 ${formatStorageBytes(bytes)} / 5 MiB`;
 }
 
+function syncVisualViewport() {
+  const viewport = window.visualViewport;
+  document.documentElement.style.setProperty(
+    "--visual-viewport-left",
+    `${viewport?.offsetLeft ?? 0}px`,
+  );
+  document.documentElement.style.setProperty(
+    "--visual-viewport-top",
+    `${viewport?.offsetTop ?? 0}px`,
+  );
+  document.documentElement.style.setProperty(
+    "--visual-viewport-width",
+    `${viewport?.width ?? window.innerWidth}px`,
+  );
+}
+
 function loadProviderConfigs() {
   try {
     const stored = JSON.parse(loadValue(STORAGE_KEYS.providerConfigs, "{}"));
@@ -977,8 +993,15 @@ elements.editor.addEventListener("input", () => {
 });
 
 elements.editor.addEventListener("scroll", syncLineNumberScroll);
-window.addEventListener("resize", scheduleLineNumberRender);
-window.visualViewport?.addEventListener("resize", scheduleLineNumberRender);
+window.addEventListener("resize", () => {
+  syncVisualViewport();
+  scheduleLineNumberRender();
+});
+window.visualViewport?.addEventListener("resize", () => {
+  syncVisualViewport();
+  scheduleLineNumberRender();
+});
+window.visualViewport?.addEventListener("scroll", syncVisualViewport);
 
 window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
@@ -1099,4 +1122,5 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+syncVisualViewport();
 loadState();

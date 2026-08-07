@@ -8,6 +8,10 @@
   --editor-font-size: 16px;
   --editor-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
   --editor-line-height: 26.4px;
+  --toolbar-height: 49px;
+  --visual-viewport-left: 0px;
+  --visual-viewport-top: 0px;
+  --visual-viewport-width: 100vw;
 }
 
 * { box-sizing: border-box; }
@@ -30,17 +34,28 @@ button { cursor: pointer; }
   overflow: hidden;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding:
+    calc(var(--toolbar-height) + env(safe-area-inset-top))
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 .toolbar {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: var(--visual-viewport-top);
+  left: var(--visual-viewport-left);
   z-index: 20;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 8px;
+  width: var(--visual-viewport-width);
+  height: calc(var(--toolbar-height) + env(safe-area-inset-top));
+  padding:
+    calc(7px + env(safe-area-inset-top))
+    calc(8px + env(safe-area-inset-right))
+    7px
+    calc(8px + env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
   background: #fff;
   overflow-x: auto;
