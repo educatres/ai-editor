@@ -430,34 +430,42 @@ function getVisualLineArrowTarget(text, offset, key) {
   return Math.min(Math.max(0, target), text.length);
 }
 
-function findVerticalToken(text, source, key) {
-  const target = getVisualLineArrowTarget(text, source, key);
-  if (target === source) return null;
-
+function findTokenNearVerticalTarget(text, target) {
   const lineStart = target === 0 ? 0 : text.lastIndexOf("\n", target - 1) + 1;
   const newlineIndex = text.indexOf("\n", lineStart);
   const lineEnd = newlineIndex === -1 ? text.length : newlineIndex;
 
   if (target < lineEnd && !isTokenSeparator(text, target)) {
-    return { ...getTokenRangeAt(text, target, lineStart, lineEnd), navigationOffset: target };
+    return getTokenRangeAt(text, target, lineStart, lineEnd);
   }
 
   let offset = Math.min(target, lineEnd);
   while (offset < lineEnd && isTokenSeparator(text, offset)) {
     offset = getNextCharacterEnd(text, offset);
   }
-  if (offset < lineEnd) {
-    return { ...getTokenRangeAt(text, offset, lineStart, lineEnd), navigationOffset: target };
-  }
+  if (offset < lineEnd) return getTokenRangeAt(text, offset, lineStart, lineEnd);
 
   offset = Math.min(target, lineEnd);
   while (offset > lineStart) {
     offset = getPreviousCharacterStart(text, offset);
-    if (!isTokenSeparator(text, offset)) {
-      return { ...getTokenRangeAt(text, offset, lineStart, lineEnd), navigationOffset: target };
-    }
+    if (!isTokenSeparator(text, offset)) return getTokenRangeAt(text, offset, lineStart, lineEnd);
   }
   return null;
+}
+
+function findVerticalToken(text, source, key) {
+  let navigationOffset = source;
+  const visitedOffsets = new Set([source]);
+
+  while (true) {
+    const target = getVisualLineArrowTarget(text, navigationOffset, key);
+    if (target === navigationOffset || visitedOffsets.has(target)) return null;
+    visitedOffsets.add(target);
+
+    const range = findTokenNearVerticalTarget(text, target);
+    if (range) return { ...range, navigationOffset: target };
+    navigationOffset = target;
+  }
 }
 
 let lastControlNavigation = null;
