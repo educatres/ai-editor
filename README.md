@@ -10,7 +10,7 @@
 - 各供應商分別保存 API Key、Endpoint 與模型
 - 支援 OpenAI Responses、Gemini generateContent 與 Claude Messages API
 - 自訂 System prompt
-- System prompt 提供「通用」與「Codex 開發」範例，可選擇取代原內容，或以 `===以下是新增的system prompt===` 分隔後追加
+- System prompt 提供「通用」、「Codex 開發」與「逐段潤飾模式」範例，可選擇取代原內容，或以 `===以下是新增的system prompt===` 分隔後追加
 - 多組 `{{ }}` 依序潤飾
 - 「全文潤飾」模式會忽略大括號與跳脫字元，將編輯器全文原樣送出
 - 支援 `\{`、`\}` 兩種大括號跳脫，完成後只移除這兩種反斜線

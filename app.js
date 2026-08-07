@@ -9,7 +9,7 @@ import {
   renderPolishedDocument,
   unescapeSpecialBraces,
 } from "./core.js?v=7";
-import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=2";
+import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
   editor: "cguAiEditor.content",
@@ -68,6 +68,7 @@ const elements = {
   toggleKeyBtn: document.querySelector("#toggleKeyBtn"),
   appendGeneralPromptBtn: document.querySelector("#appendGeneralPromptBtn"),
   appendCodexPromptBtn: document.querySelector("#appendCodexPromptBtn"),
+  appendCodexSectionPromptBtn: document.querySelector("#appendCodexSectionPromptBtn"),
 };
 
 let activeProvider = DEFAULTS.provider;
@@ -443,6 +444,10 @@ elements.appendGeneralPromptBtn.addEventListener("click", () => {
 
 elements.appendCodexPromptBtn.addEventListener("click", () => {
   appendPromptPreset(PROMPT_PRESETS.codex);
+});
+
+elements.appendCodexSectionPromptBtn.addEventListener("click", () => {
+  appendPromptPreset(PROMPT_PRESETS.codexSection);
 });
 
 elements.toggleKeyBtn.addEventListener("click", () => {

@@ -163,6 +163,10 @@ assert.equal(findSearchMatch("Alpha", "missing", 0, 1), null);
 assert.equal(PROMPT_PRESETS.general.content.startsWith("你是繁體中文文字編輯助手。"), true);
 assert.equal(PROMPT_PRESETS.codex.content.includes("## 基本原則"), true);
 assert.equal(PROMPT_PRESETS.codex.content.includes("### 十二、完成後交付內容"), true);
+assert.equal(PROMPT_PRESETS.codexSection.label, "逐段潤飾模式");
+assert.equal(PROMPT_PRESETS.codexSection.content.includes("## 上下文處理"), true);
+assert.equal(PROMPT_PRESETS.codexSection.content.includes("不要自行整理成完整專案規格書"), true);
+assert.equal(PROMPT_PRESETS.codexSection.content.includes("```markdown"), true);
 assert.equal(
   mergePromptText("既有內容", PROMPT_PRESETS.general.content),
   `既有內容\n${PROMPT_SEPARATOR}\n${PROMPT_PRESETS.general.content}`,
