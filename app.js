@@ -265,6 +265,10 @@ const LEGACY_ARROW_KEYS = {
   Right: "ArrowRight",
   Up: "ArrowUp",
   Down: "ArrowDown",
+  19: "ArrowUp",
+  20: "ArrowDown",
+  21: "ArrowLeft",
+  22: "ArrowRight",
   37: "ArrowLeft",
   38: "ArrowUp",
   39: "ArrowRight",
@@ -274,6 +278,10 @@ const LEGACY_ARROW_KEYS = {
 let physicalShiftPressed = false;
 let physicalControlPressed = false;
 
+function hasUnknownKeyboardKey(event) {
+  return !event.key || event.key === "Unidentified";
+}
+
 function normalizeArrowKey(event) {
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
     return event.key;
@@ -281,19 +289,23 @@ function normalizeArrowKey(event) {
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) {
     return event.code;
   }
-  return LEGACY_ARROW_KEYS[event.key] || LEGACY_ARROW_KEYS[event.keyCode]
+  if (LEGACY_ARROW_KEYS[event.key]) return LEGACY_ARROW_KEYS[event.key];
+  if (!hasUnknownKeyboardKey(event)) return null;
+  return LEGACY_ARROW_KEYS[event.keyCode]
     || LEGACY_ARROW_KEYS[event.which] || null;
 }
 
 function isShiftKeyEvent(event) {
-  return event.key === "Shift" || event.code === "ShiftLeft" || event.code === "ShiftRight"
-    || event.keyCode === 16 || event.which === 16;
+  if (event.key === "Shift" || event.code === "ShiftLeft" || event.code === "ShiftRight") return true;
+  const keyCode = event.keyCode || event.which;
+  return keyCode === 16 || (hasUnknownKeyboardKey(event) && [59, 60].includes(keyCode));
 }
 
 function isControlKeyEvent(event) {
-  return event.key === "Control" || event.key === "Ctrl"
-    || event.code === "ControlLeft" || event.code === "ControlRight"
-    || event.keyCode === 17 || event.which === 17;
+  if (event.key === "Control" || event.key === "Ctrl"
+    || event.code === "ControlLeft" || event.code === "ControlRight") return true;
+  const keyCode = event.keyCode || event.which;
+  return keyCode === 17 || (hasUnknownKeyboardKey(event) && [113, 114].includes(keyCode));
 }
 
 function hasShiftModifier(event) {
@@ -344,18 +356,28 @@ function selectWhitespaceToken(direction) {
   updateCursorPosition();
 }
 
+const handledControlArrowKeys = new Set();
+
 function handleArrowSelection(event) {
   const arrowKey = normalizeArrowKey(event);
   if (!arrowKey) return;
+  const arrowId = arrowKey;
 
-  if (hasControlModifier(event) && !event.metaKey && !event.altKey && !event.shiftKey) {
+  if (event.type === "keyup" && handledControlArrowKeys.has(arrowId)) {
+    handledControlArrowKeys.delete(arrowId);
+    return;
+  }
+
+  if (hasControlModifier(event) && !event.shiftKey) {
     event.preventDefault();
     if (arrowKey === "ArrowLeft") selectWhitespaceToken(-1);
     else if (arrowKey === "ArrowRight") selectWhitespaceToken(1);
     else extendSelectionWithArrow(arrowKey);
+    if (event.type === "keydown") handledControlArrowKeys.add(arrowId);
     return;
   }
 
+  if (event.type === "keyup") return;
   if (!hasShiftModifier(event)) return;
 
   const start = elements.editor.selectionStart;
@@ -640,12 +662,12 @@ elements.editor.addEventListener("input", () => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
 
-document.addEventListener("keydown", (event) => {
+window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
   if (isControlKeyEvent(event)) physicalControlPressed = true;
 }, true);
 
-document.addEventListener("keyup", (event) => {
+window.addEventListener("keyup", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = false;
   if (isControlKeyEvent(event)) physicalControlPressed = false;
 }, true);
@@ -656,6 +678,7 @@ window.addEventListener("blur", () => {
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
+elements.editor.addEventListener("keyup", handleArrowSelection);
 
 document.addEventListener("selectionchange", () => {
   if (document.activeElement === elements.editor) updateCursorPosition();
