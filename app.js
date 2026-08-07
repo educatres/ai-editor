@@ -48,6 +48,8 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
+  lineNumbers: document.querySelector("#lineNumbers"),
+  lineNumberContent: document.querySelector("#lineNumberContent"),
   cursorPosition: document.querySelector("#cursorPosition"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
@@ -184,6 +186,7 @@ function applyFontSize(value, persist = true) {
   document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
   elements.zoomInBtn.disabled = editorFontSize >= DEFAULTS.maxFontSize;
   elements.zoomOutBtn.disabled = editorFontSize <= DEFAULTS.minFontSize;
+  scheduleLineNumberRender();
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
@@ -194,6 +197,7 @@ function updateCursorPosition() {
   const character = Array.from(lines.at(-1) ?? "").length + 1;
   elements.cursorPosition.value = `${line}:${character}`;
   elements.cursorPosition.textContent = `${line}:${character}`;
+  updateActiveLineNumber(line);
 }
 
 function offsetAtCharacter(lineText, character) {
@@ -397,6 +401,62 @@ function createEditorMirror() {
   });
   document.body.appendChild(mirror);
   return mirror;
+}
+
+let lineNumberFrame = null;
+let activeLineNumber = 1;
+
+function updateActiveLineNumber(line = activeLineNumber) {
+  activeLineNumber = line;
+  elements.lineNumberContent.querySelector(".is-active")?.classList.remove("is-active");
+  elements.lineNumberContent
+    .querySelector(`[data-line="${activeLineNumber}"]`)
+    ?.classList.add("is-active");
+}
+
+function syncLineNumberScroll() {
+  elements.lineNumberContent.style.transform = `translateY(${-elements.editor.scrollTop}px)`;
+}
+
+function renderLineNumbers() {
+  lineNumberFrame = null;
+  const lines = elements.editor.value.split("\n");
+  const digits = String(lines.length).length;
+  elements.lineNumbers.style.setProperty("--line-number-digits", String(digits));
+
+  const mirror = createEditorMirror();
+  if (!elements.wordWrap.checked) {
+    mirror.style.whiteSpace = "pre";
+    mirror.style.overflowWrap = "normal";
+  }
+  const markers = [];
+  lines.forEach((line, index) => {
+    const marker = document.createElement("span");
+    marker.textContent = "\u200b";
+    markers.push(marker);
+    mirror.append(marker, document.createTextNode(line));
+    if (index < lines.length - 1) mirror.append(document.createTextNode("\n"));
+  });
+
+  const fragment = document.createDocumentFragment();
+  markers.forEach((marker, index) => {
+    const number = document.createElement("span");
+    number.className = "line-number";
+    number.dataset.line = String(index + 1);
+    number.style.top = `${marker.offsetTop}px`;
+    number.textContent = String(index + 1);
+    fragment.append(number);
+  });
+  mirror.remove();
+
+  elements.lineNumberContent.replaceChildren(fragment);
+  syncLineNumberScroll();
+  updateActiveLineNumber();
+}
+
+function scheduleLineNumberRender() {
+  if (lineNumberFrame !== null) return;
+  lineNumberFrame = window.requestAnimationFrame(renderLineNumbers);
 }
 
 function getVisualLineArrowTarget(text, offset, key) {
@@ -623,6 +683,7 @@ function handleArrowSelection(event) {
 function applyWordWrap(enabled, persist = true) {
   elements.wordWrap.checked = enabled;
   elements.editor.wrap = enabled ? "soft" : "off";
+  scheduleLineNumberRender();
   if (persist) saveValue(STORAGE_KEYS.wordWrap, String(enabled));
 }
 
@@ -732,6 +793,7 @@ async function runPolish() {
       const output = renderFullPolishedDocument(originalText, result);
       elements.editor.value = output;
       updateCursorPosition();
+      scheduleLineNumberRender();
       saveValue(STORAGE_KEYS.editor, output);
       return;
     }
@@ -773,6 +835,7 @@ async function runPolish() {
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
     updateCursorPosition();
+    scheduleLineNumberRender();
     saveValue(STORAGE_KEYS.editor, output);
   } catch (error) {
     reportError(error.message || "潤飾失敗");
@@ -865,6 +928,7 @@ function clearRecords() {
 let saveTimer;
 elements.editor.addEventListener("input", () => {
   updateCursorPosition();
+  scheduleLineNumberRender();
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveValue(STORAGE_KEYS.editor, elements.editor.value);
@@ -874,6 +938,10 @@ elements.editor.addEventListener("input", () => {
 ["click", "keyup", "select"].forEach((eventName) => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
+
+elements.editor.addEventListener("scroll", syncLineNumberScroll);
+window.addEventListener("resize", scheduleLineNumberRender);
+window.visualViewport?.addEventListener("resize", scheduleLineNumberRender);
 
 window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
