@@ -38,6 +38,22 @@ export function unescapeSpecialBraces(text) {
   return text.replace(/\\([{}])/g, "$1");
 }
 
+export function getHistoryShortcutKey(event) {
+  const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  const legacyKeyCode = event.keyCode || event.which;
+  const hasUnknownKey = !event.key || event.key === "Unidentified";
+
+  if (key === "z" || event.code === "KeyZ" || legacyKeyCode === 90
+    || (hasUnknownKey && legacyKeyCode === 54)) {
+    return "z";
+  }
+  if (key === "y" || event.code === "KeyY" || legacyKeyCode === 89
+    || (hasUnknownKey && legacyKeyCode === 53)) {
+    return "y";
+  }
+  return null;
+}
+
 export const CONTEXT_MODE_SYSTEM_PROMPT = `你目前正在執行「只潤飾 {{ }} 但含上下文」模式。
 使用者訊息會提供完整文章，並以 <<<POLISH_TARGET_START>>> 與 <<<POLISH_TARGET_END>>> 標示本次唯一要潤飾的目標。
 完整文章中的其他文字只供理解上下文，不得改寫、摘要或輸出。

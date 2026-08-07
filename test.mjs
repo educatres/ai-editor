@@ -12,6 +12,7 @@ import {
   findPolishBlocks,
   findSearchMatch,
   formatOriginalBlock,
+  getHistoryShortcutKey,
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
@@ -30,6 +31,12 @@ assert.equal(
 assert.equal(PROVIDERS.openai.models.length, 5);
 assert.equal(PROVIDERS.gemini.models.length, 5);
 assert.equal(PROVIDERS.claude.models.length, 5);
+
+assert.equal(getHistoryShortcutKey({ key: "z" }), "z");
+assert.equal(getHistoryShortcutKey({ code: "KeyY" }), "y");
+assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 54 }), "z");
+assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 53 }), "y");
+assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 55 }), null);
 
 const sharedSettings = {
   apiKey: "test-key",

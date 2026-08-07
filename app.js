@@ -7,11 +7,12 @@ import {
   extractProviderText,
   findPolishBlocks,
   findSearchMatch,
+  getHistoryShortcutKey,
   getProvider,
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=9";
+} from "./core.js?v=10";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -944,17 +945,6 @@ function redoEditorChange() {
   applyEditorHistorySnapshot(snapshot);
 }
 
-function getHistoryShortcutKey(event) {
-  const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
-  if (key === "z" || event.code === "KeyZ" || event.keyCode === 90 || event.which === 90) {
-    return "z";
-  }
-  if (key === "y" || event.code === "KeyY" || event.keyCode === 89 || event.which === 89) {
-    return "y";
-  }
-  return null;
-}
-
 function handleEditorHistoryShortcut(event) {
   if (event.target !== elements.editor || event.altKey) return;
   if (!hasControlModifier(event) && !event.metaKey) return;
@@ -965,6 +955,17 @@ function handleEditorHistoryShortcut(event) {
   event.preventDefault();
   if (key === "y" || (key === "z" && hasShiftModifier(event))) redoEditorChange();
   else undoEditorChange();
+}
+
+function handleEditorBeforeInput(event) {
+  if (["historyUndo", "historyRedo"].includes(event.inputType)) {
+    if (!event.cancelable) return;
+    event.preventDefault();
+    if (event.inputType === "historyRedo") redoEditorChange();
+    else undoEditorChange();
+    return;
+  }
+  pendingBeforeInputSnapshot = captureEditorSnapshot();
 }
 
 async function runPolish() {
@@ -1124,9 +1125,7 @@ function clearRecords() {
 }
 
 let saveTimer;
-elements.editor.addEventListener("beforeinput", () => {
-  pendingBeforeInputSnapshot = captureEditorSnapshot();
-});
+elements.editor.addEventListener("beforeinput", handleEditorBeforeInput);
 
 elements.editor.addEventListener("input", (event) => {
   const inputType = event.inputType || "";
