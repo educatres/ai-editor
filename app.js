@@ -34,6 +34,13 @@ const STORAGE_KEYS = {
 
 const POLISH_MODES = new Set(["full", "marked", "context"]);
 const LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
+const EDITOR_HISTORY_LIMIT = 100;
+const EDITOR_HISTORY_GROUP_WINDOW_MS = 750;
+const GROUPABLE_INPUT_TYPES = new Set([
+  "insertText",
+  "deleteContentBackward",
+  "deleteContentForward",
+]);
 
 const DEFAULTS = {
   provider: "cgu",
@@ -95,6 +102,12 @@ let activeProvider = DEFAULTS.provider;
 let providerConfigs = {};
 let editorFontSize = DEFAULTS.fontSize;
 let activePolishMode = DEFAULTS.polishMode;
+let editorUndoStack = [];
+let editorRedoStack = [];
+let editorHistoryCurrent = null;
+let pendingBeforeInputSnapshot = null;
+let lastHistoryInputType = "";
+let lastHistoryInputTime = 0;
 
 function loadValue(key, fallback = "") {
   try {
@@ -777,6 +790,7 @@ function loadState() {
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
   updateActiveLineFromCursor();
   updateLocalStorageUsage();
+  resetEditorHistory();
 }
 
 function saveSettings() {
@@ -842,6 +856,40 @@ function captureEditorViewport() {
   };
 }
 
+function captureEditorSnapshot() {
+  return {
+    value: elements.editor.value,
+    ...captureEditorViewport(),
+  };
+}
+
+function resetEditorHistoryGrouping() {
+  pendingBeforeInputSnapshot = null;
+  lastHistoryInputType = "";
+  lastHistoryInputTime = 0;
+}
+
+function pushHistorySnapshot(stack, snapshot) {
+  if (!snapshot) return;
+  const previous = stack.at(-1);
+  if (previous?.value === snapshot.value) return;
+  stack.push(snapshot);
+  if (stack.length > EDITOR_HISTORY_LIMIT) stack.shift();
+}
+
+function resetEditorHistory() {
+  editorUndoStack = [];
+  editorRedoStack = [];
+  editorHistoryCurrent = captureEditorSnapshot();
+  resetEditorHistoryGrouping();
+}
+
+function recordProgrammaticEditorChange() {
+  pushHistorySnapshot(editorUndoStack, captureEditorSnapshot());
+  editorRedoStack = [];
+  resetEditorHistoryGrouping();
+}
+
 function restoreEditorViewport(viewport) {
   elements.editor.scrollTop = viewport.scrollTop;
   elements.editor.scrollLeft = viewport.scrollLeft;
@@ -849,6 +897,7 @@ function restoreEditorViewport(viewport) {
 }
 
 function replaceEditorValuePreservingViewport(value, viewport) {
+  if (value !== elements.editor.value) recordProgrammaticEditorChange();
   elements.editor.value = value;
   const selectionStart = Math.min(viewport.selectionStart, value.length);
   const selectionEnd = Math.min(viewport.selectionEnd, value.length);
@@ -858,7 +907,64 @@ function replaceEditorValuePreservingViewport(value, viewport) {
     viewport.selectionDirection,
   );
   restoreEditorViewport(viewport);
+  editorHistoryCurrent = captureEditorSnapshot();
   window.requestAnimationFrame(() => restoreEditorViewport(viewport));
+}
+
+function applyEditorHistorySnapshot(snapshot) {
+  elements.editor.value = snapshot.value;
+  const selectionStart = Math.min(snapshot.selectionStart, snapshot.value.length);
+  const selectionEnd = Math.min(snapshot.selectionEnd, snapshot.value.length);
+  elements.editor.setSelectionRange(
+    selectionStart,
+    selectionEnd,
+    snapshot.selectionDirection,
+  );
+  restoreEditorViewport(snapshot);
+  updateActiveLineFromCursor();
+  scheduleLineNumberRender();
+  saveValue(STORAGE_KEYS.editor, snapshot.value);
+  editorHistoryCurrent = captureEditorSnapshot();
+  resetEditorHistoryGrouping();
+  elements.editor.focus({ preventScroll: true });
+  window.requestAnimationFrame(() => restoreEditorViewport(snapshot));
+}
+
+function undoEditorChange() {
+  const snapshot = editorUndoStack.pop();
+  if (!snapshot) return;
+  pushHistorySnapshot(editorRedoStack, captureEditorSnapshot());
+  applyEditorHistorySnapshot(snapshot);
+}
+
+function redoEditorChange() {
+  const snapshot = editorRedoStack.pop();
+  if (!snapshot) return;
+  pushHistorySnapshot(editorUndoStack, captureEditorSnapshot());
+  applyEditorHistorySnapshot(snapshot);
+}
+
+function getHistoryShortcutKey(event) {
+  const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  if (key === "z" || event.code === "KeyZ" || event.keyCode === 90 || event.which === 90) {
+    return "z";
+  }
+  if (key === "y" || event.code === "KeyY" || event.keyCode === 89 || event.which === 89) {
+    return "y";
+  }
+  return null;
+}
+
+function handleEditorHistoryShortcut(event) {
+  if (event.target !== elements.editor || event.altKey) return;
+  if (!hasControlModifier(event) && !event.metaKey) return;
+
+  const key = getHistoryShortcutKey(event);
+  if (!key) return;
+
+  event.preventDefault();
+  if (key === "y" || (key === "z" && hasShiftModifier(event))) redoEditorChange();
+  else undoEditorChange();
 }
 
 async function runPolish() {
@@ -1014,10 +1120,33 @@ function clearRecords() {
   elements.contextSystemPrompt.value = DEFAULTS.contextSystemPrompt;
   renderProvider(DEFAULTS.provider);
   applyFontSize(DEFAULTS.fontSize, false);
+  resetEditorHistory();
 }
 
 let saveTimer;
-elements.editor.addEventListener("input", () => {
+elements.editor.addEventListener("beforeinput", () => {
+  pendingBeforeInputSnapshot = captureEditorSnapshot();
+});
+
+elements.editor.addEventListener("input", (event) => {
+  const inputType = event.inputType || "";
+  const inputTime = Date.now();
+  const continuesGroup = GROUPABLE_INPUT_TYPES.has(inputType)
+    && inputType === lastHistoryInputType
+    && inputTime - lastHistoryInputTime <= EDITOR_HISTORY_GROUP_WINDOW_MS;
+
+  if (!continuesGroup) {
+    pushHistorySnapshot(
+      editorUndoStack,
+      pendingBeforeInputSnapshot ?? editorHistoryCurrent,
+    );
+  }
+  editorRedoStack = [];
+  editorHistoryCurrent = captureEditorSnapshot();
+  pendingBeforeInputSnapshot = null;
+  lastHistoryInputType = inputType;
+  lastHistoryInputTime = inputTime;
+
   updateActiveLineFromCursor();
   scheduleLineNumberRender();
   window.clearTimeout(saveTimer);
@@ -1057,6 +1186,7 @@ window.addEventListener("blur", () => {
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
+elements.editor.addEventListener("keydown", handleEditorHistoryShortcut);
 elements.editor.addEventListener("keyup", handleArrowSelection);
 
 document.addEventListener("selectionchange", () => {
