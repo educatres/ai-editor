@@ -118,6 +118,29 @@ button.danger { color: var(--danger); }
   overflow: hidden;
 }
 
+.editor-shell::before,
+.editor-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.editor-shell::before {
+  top: 0;
+  right: 0;
+  left: 2px;
+  height: 2px;
+}
+
+.editor-shell::after {
+  top: 2px;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+}
+
 #editor {
   display: block;
   width: 100%;
@@ -137,7 +160,7 @@ button.danger { color: var(--danger); }
 
 .caret-guide {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   display: none;
   width: 2px;
   height: 2px;

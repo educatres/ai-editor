@@ -457,8 +457,17 @@ function updateCaretGuides() {
     return;
   }
 
-  elements.caretGuideTop.style.left = `${editor.offsetLeft + caretLeft - 1}px`;
-  elements.caretGuideLeft.style.top = `${editor.offsetTop + caretTop + (lineHeight / 2) - 1}px`;
+  const shell = editor.parentElement;
+  const guideLeft = Math.min(
+    shell.clientWidth - 2,
+    Math.max(2, editor.offsetLeft + caretLeft - 1),
+  );
+  const guideTop = Math.min(
+    shell.clientHeight - 2,
+    Math.max(2, editor.offsetTop + caretTop + (lineHeight / 2) - 1),
+  );
+  elements.caretGuideTop.style.left = `${guideLeft}px`;
+  elements.caretGuideLeft.style.top = `${guideTop}px`;
   elements.caretGuideTop.classList.add("is-visible");
   elements.caretGuideLeft.classList.add("is-visible");
 }
