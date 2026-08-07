@@ -317,43 +317,50 @@ function hasControlModifier(event) {
     || event.getModifierState?.("Control") === true;
 }
 
-function selectWhitespaceToken(direction) {
+function getPreviousCharacterStart(text, offset) {
+  if (offset <= 0) return 0;
+  return offset - (Array.from(text.slice(0, offset)).at(-1)?.length ?? 1);
+}
+
+function getSingleCharacterSelection(key) {
   const text = elements.editor.value;
+  if (!text) return null;
+
+  const start = elements.editor.selectionStart;
+  const end = elements.editor.selectionEnd;
   const hasSelection = elements.editor.selectionStart !== elements.editor.selectionEnd;
-  let cursor = direction < 0
-    ? elements.editor.selectionStart
-    : elements.editor.selectionEnd;
+  let target;
 
-  if (direction < 0) {
-    if (!hasSelection && cursor > 0 && !/\s/u.test(text[cursor - 1])) {
-      let end = cursor;
-      while (end < text.length && !/\s/u.test(text[end])) end += 1;
-      while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
-      elements.editor.setSelectionRange(cursor, end, "backward");
-      updateCursorPosition();
-      return;
-    }
-
-    while (cursor > 0 && /\s/u.test(text[cursor - 1])) cursor -= 1;
-    if (cursor === 0) return;
-
-    const end = cursor;
-    while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
-    elements.editor.setSelectionRange(cursor, end, "backward");
+  if (key === "ArrowLeft") {
+    if (start <= 0) return null;
+    target = getPreviousCharacterStart(text, start);
+    if (text[target] === "\n" && target > 0) target = getPreviousCharacterStart(text, target);
+  } else if (key === "ArrowRight") {
+    target = hasSelection ? end : start;
+    if (text[target] === "\n") target += 1;
+    if (target >= text.length) return null;
   } else {
-    if (!hasSelection && cursor < text.length && !/\s/u.test(text[cursor])) {
-      while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
-    } else {
-      while (cursor < text.length && /\s/u.test(text[cursor])) cursor += 1;
-    }
-    if (cursor >= text.length) return;
+    const source = start;
+    target = getArrowSelectionTarget(text, source, key);
+    if (target === source) return null;
 
-    const start = cursor;
-    while (cursor < text.length && !/\s/u.test(text[cursor])) cursor += 1;
-    elements.editor.setSelectionRange(start, cursor, "forward");
+    const targetLineStart = target === 0 ? 0 : text.lastIndexOf("\n", target - 1) + 1;
+    if ((target >= text.length || text[target] === "\n") && target > targetLineStart) {
+      target = getPreviousCharacterStart(text, target);
+    }
   }
 
-  updateCursorPosition();
+  const character = Array.from(text.slice(target))[0];
+  if (!character) return null;
+  return {
+    start: target,
+    end: target + character.length,
+    direction: key === "ArrowLeft" || key === "ArrowUp" ? "backward" : "forward",
+  };
+}
+
+function selectSingleCharacterWithArrow(key) {
+  applySelection(getSingleCharacterSelection(key));
 }
 
 const handledControlArrowKeys = new Set();
@@ -370,9 +377,7 @@ function handleArrowSelection(event) {
 
   if (hasControlModifier(event) && !event.shiftKey) {
     event.preventDefault();
-    if (arrowKey === "ArrowLeft") selectWhitespaceToken(-1);
-    else if (arrowKey === "ArrowRight") selectWhitespaceToken(1);
-    else extendSelectionWithArrow(arrowKey);
+    selectSingleCharacterWithArrow(arrowKey);
     if (event.type === "keydown") handledControlArrowKeys.add(arrowId);
     return;
   }
