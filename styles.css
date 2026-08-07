@@ -259,6 +259,14 @@ input, select, .dialog-form textarea {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+.settings-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
