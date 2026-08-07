@@ -40,14 +40,19 @@ export function unescapeSpecialBraces(text) {
 
 export function getHistoryShortcutKey(event) {
   const key = typeof event.key === "string" ? event.key.toLowerCase() : "";
+  const keyIdentifier = typeof event.keyIdentifier === "string"
+    ? event.keyIdentifier.toUpperCase()
+    : "";
   const legacyKeyCode = event.keyCode || event.which;
   const hasUnknownKey = !event.key || event.key === "Unidentified";
 
-  if (key === "z" || event.code === "KeyZ" || legacyKeyCode === 90
+  if (key === "z" || key === "undo" || event.code === "KeyZ"
+    || keyIdentifier === "U+005A" || legacyKeyCode === 90
     || (hasUnknownKey && legacyKeyCode === 54)) {
     return "z";
   }
-  if (key === "y" || event.code === "KeyY" || legacyKeyCode === 89
+  if (key === "y" || key === "redo" || event.code === "KeyY"
+    || keyIdentifier === "U+0059" || legacyKeyCode === 89
     || (hasUnknownKey && legacyKeyCode === 53)) {
     return "y";
   }

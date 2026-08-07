@@ -12,7 +12,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=10";
+} from "./core.js?v=11";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -112,6 +112,9 @@ let pendingBeforeInputSnapshot = null;
 let lastHistoryInputType = "";
 let lastHistoryInputTime = 0;
 let editorHistoryBusy = false;
+const handledHistoryKeyPresses = new Set();
+let lastBeforeInputHistoryTime = 0;
+let lastControlKeyActivityTime = 0;
 
 function loadValue(key, fallback = "") {
   try {
@@ -960,22 +963,51 @@ function redoEditorChange() {
 }
 
 function handleEditorHistoryShortcut(event) {
-  if (event.target !== elements.editor || event.altKey) return;
-  if (!hasControlModifier(event) && !event.metaKey) return;
+  const editorHasFocus = document.activeElement === elements.editor;
+  if (!editorHasFocus && event.target !== elements.editor) return;
+  if (event.altKey) return;
 
   const key = getHistoryShortcutKey(event);
   if (!key) return;
+  const directCommand = ["undo", "redo"].includes(event.key?.toLowerCase?.());
+
+  if (event.type === "keyup") {
+    if (handledHistoryKeyPresses.delete(key)) {
+      event.preventDefault();
+      return;
+    }
+    if (Date.now() - lastBeforeInputHistoryTime < 750) {
+      event.preventDefault();
+      lastBeforeInputHistoryTime = 0;
+      return;
+    }
+  }
+
+  const hasRecentAndroidControl = Date.now() - lastControlKeyActivityTime < 400;
+  if (!hasControlModifier(event) && !event.metaKey
+    && !directCommand && !hasRecentAndroidControl) return;
 
   event.preventDefault();
+  if (event.type === "keydown") handledHistoryKeyPresses.add(key);
   if (key === "y" || (key === "z" && hasShiftModifier(event))) redoEditorChange();
   else undoEditorChange();
 }
 
 function handleEditorBeforeInput(event) {
   if (["historyUndo", "historyRedo"].includes(event.inputType)) {
-    if (!event.cancelable) return;
+    const action = event.inputType === "historyRedo" ? "redo" : "undo";
+    if (!event.cancelable) {
+      const valueBeforeNativeHistory = elements.editor.value;
+      window.requestAnimationFrame(() => {
+        if (elements.editor.value !== valueBeforeNativeHistory) return;
+        if (action === "redo") redoEditorChange();
+        else undoEditorChange();
+      });
+      return;
+    }
     event.preventDefault();
-    if (event.inputType === "historyRedo") redoEditorChange();
+    lastBeforeInputHistoryTime = Date.now();
+    if (action === "redo") redoEditorChange();
     else undoEditorChange();
     return;
   }
@@ -1186,21 +1218,31 @@ window.visualViewport?.addEventListener("scroll", syncVisualViewport);
 
 window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
-  if (isControlKeyEvent(event)) physicalControlPressed = true;
+  if (isControlKeyEvent(event)) {
+    physicalControlPressed = true;
+    lastControlKeyActivityTime = Date.now();
+  }
+  handleEditorHistoryShortcut(event);
 }, true);
 
 window.addEventListener("keyup", (event) => {
+  handleEditorHistoryShortcut(event);
   if (isShiftKeyEvent(event)) physicalShiftPressed = false;
-  if (isControlKeyEvent(event)) physicalControlPressed = false;
+  if (isControlKeyEvent(event)) {
+    physicalControlPressed = false;
+    lastControlKeyActivityTime = Date.now();
+  }
 }, true);
 
 window.addEventListener("blur", () => {
   physicalShiftPressed = false;
   physicalControlPressed = false;
+  handledHistoryKeyPresses.clear();
+  lastBeforeInputHistoryTime = 0;
+  lastControlKeyActivityTime = 0;
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
-elements.editor.addEventListener("keydown", handleEditorHistoryShortcut);
 elements.editor.addEventListener("keyup", handleArrowSelection);
 
 document.addEventListener("selectionchange", () => {

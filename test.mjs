@@ -36,6 +36,10 @@ assert.equal(getHistoryShortcutKey({ key: "z" }), "z");
 assert.equal(getHistoryShortcutKey({ code: "KeyY" }), "y");
 assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 54 }), "z");
 assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 53 }), "y");
+assert.equal(getHistoryShortcutKey({ key: "Undo" }), "z");
+assert.equal(getHistoryShortcutKey({ key: "Redo" }), "y");
+assert.equal(getHistoryShortcutKey({ keyIdentifier: "U+005A" }), "z");
+assert.equal(getHistoryShortcutKey({ keyIdentifier: "U+0059" }), "y");
 assert.equal(getHistoryShortcutKey({ key: "Unidentified", keyCode: 55 }), null);
 
 const sharedSettings = {
