@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>AI Editor</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
   <main class="app">
@@ -92,6 +92,20 @@
         <button type="button" data-close="settingsDialog">取消</button>
         <button id="saveSettingsBtn" type="submit" class="primary">儲存</button>
       </div>
+
+      <section class="usage-help" aria-labelledby="usageHelpTitle">
+        <strong id="usageHelpTitle">操作說明</strong>
+        <ol>
+          <li>選擇 AI 供應商，輸入 API Key，確認 Endpoint 與模型後按「儲存」。</li>
+          <li>局部潤飾：以 <code>{{ 要潤飾的文字 }}</code> 標記內容，再按「潤飾」。</li>
+          <li>全文潤飾：勾選工具列的「全文潤飾」，編輯器內所有文字都會送交 AI。</li>
+          <li>若大括號只作為一般文字，局部潤飾時可使用 <code>\{</code> 與 <code>\}</code>。</li>
+          <li>Search 可持續搜尋上一個或下一個結果；按「關閉」才會隱藏搜尋列。</li>
+          <li>System prompt 可選擇取代原內容，或以分隔線追加範本。</li>
+          <li>「換行」會依網頁寬度自動換行；複製與下載不會改變原始文字。</li>
+        </ol>
+        <p>文章、API 與各項設定會保存在本瀏覽器的 LocalStorage；按「清除記錄」可全部刪除。</p>
+      </section>
     </form>
   </dialog>
 

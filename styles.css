@@ -130,6 +130,8 @@ dialog::backdrop { background: rgb(0 0 0 / .25); }
   display: grid;
   gap: 12px;
   padding: 12px;
+  max-height: calc(100dvh - 22px);
+  overflow-y: auto;
 }
 
 .dialog-head {
@@ -187,6 +189,28 @@ input, select, .dialog-form textarea {
   color: var(--muted);
 }
 .warning { color: #7a4a00; }
+
+.usage-help {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: #333;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.usage-help ol {
+  margin: 7px 0;
+  padding-left: 22px;
+}
+
+.usage-help li + li { margin-top: 4px; }
+.usage-help p { margin: 7px 0 0; }
+.usage-help code {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: #f2f2f2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 
 .dialog-actions {
   display: flex;
