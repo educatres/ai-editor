@@ -200,7 +200,7 @@ function offsetAtCharacter(lineText, character) {
   return Array.from(lineText).slice(0, character).join("").length;
 }
 
-function getShiftArrowTarget(text, offset, key) {
+function getArrowSelectionTarget(text, offset, key) {
   if (key === "ArrowLeft") {
     if (offset <= 0) return 0;
     return offset - (Array.from(text.slice(0, offset)).at(-1)?.length ?? 1);
@@ -232,29 +232,40 @@ function getShiftArrowTarget(text, offset, key) {
   return nextLineStart + offsetAtCharacter(nextLine, character);
 }
 
-function ensureShiftArrowSelection(event) {
-  if (!event.shiftKey || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
-    return;
-  }
-
+function extendSelectionWithArrow(key) {
   const start = elements.editor.selectionStart;
   const end = elements.editor.selectionEnd;
   const direction = elements.editor.selectionDirection;
   const focus = start === end || direction !== "backward" ? end : start;
   const anchor = start === end ? start : direction === "backward" ? end : start;
+  const target = getArrowSelectionTarget(elements.editor.value, focus, key);
+  if (target === focus) return;
 
+  elements.editor.setSelectionRange(
+    Math.min(anchor, target),
+    Math.max(anchor, target),
+    target < anchor ? "backward" : "forward",
+  );
+  updateCursorPosition();
+}
+
+function handleArrowSelection(event) {
+  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+
+  if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+    event.preventDefault();
+    extendSelectionWithArrow(event.key);
+    return;
+  }
+
+  if (!event.shiftKey) return;
+
+  const start = elements.editor.selectionStart;
+  const end = elements.editor.selectionEnd;
   window.requestAnimationFrame(() => {
-    if (elements.editor.selectionStart !== start || elements.editor.selectionEnd !== end) return;
-
-    const target = getShiftArrowTarget(elements.editor.value, focus, event.key);
-    if (target === focus) return;
-
-    elements.editor.setSelectionRange(
-      Math.min(anchor, target),
-      Math.max(anchor, target),
-      target < anchor ? "backward" : "forward",
-    );
-    updateCursorPosition();
+    if (elements.editor.selectionStart === start && elements.editor.selectionEnd === end) {
+      extendSelectionWithArrow(event.key);
+    }
   });
 }
 
@@ -513,7 +524,7 @@ elements.editor.addEventListener("input", () => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
 
-elements.editor.addEventListener("keydown", ensureShiftArrowSelection);
+elements.editor.addEventListener("keydown", handleArrowSelection);
 
 document.addEventListener("selectionchange", () => {
   if (document.activeElement === elements.editor) updateCursorPosition();
