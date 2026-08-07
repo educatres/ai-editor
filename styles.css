@@ -134,22 +134,6 @@ button.danger { color: var(--danger); }
 
 #editor:disabled { background: #fafafa; color: #444; }
 
-.caret-marker {
-  position: absolute;
-  z-index: 2;
-  display: none;
-  width: 0;
-  height: 0;
-  border-right: 4px solid transparent;
-  border-bottom: 6px solid #111;
-  border-left: 4px solid transparent;
-  pointer-events: none;
-  animation: none;
-  transition: none;
-}
-
-.caret-marker.is-visible { display: block; }
-
  dialog {
   width: min(520px, calc(100vw - 20px));
   max-height: calc(100dvh - 20px);

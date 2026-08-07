@@ -48,7 +48,6 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
-  caretMarker: document.querySelector("#caretMarker"),
   cursorPosition: document.querySelector("#cursorPosition"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
@@ -185,7 +184,6 @@ function applyFontSize(value, persist = true) {
   document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
   elements.zoomInBtn.disabled = editorFontSize >= DEFAULTS.maxFontSize;
   elements.zoomOutBtn.disabled = editorFontSize <= DEFAULTS.minFontSize;
-  scheduleCaretMarkerUpdate();
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
@@ -196,7 +194,6 @@ function updateCursorPosition() {
   const character = Array.from(lines.at(-1) ?? "").length + 1;
   elements.cursorPosition.value = `${line}:${character}`;
   elements.cursorPosition.textContent = `${line}:${character}`;
-  scheduleCaretMarkerUpdate();
 }
 
 function offsetAtCharacter(lineText, character) {
@@ -400,74 +397,6 @@ function createEditorMirror() {
   });
   document.body.appendChild(mirror);
   return mirror;
-}
-
-function getEditorOffsetPosition(offset) {
-  const text = elements.editor.value;
-  const safeOffset = Math.min(Math.max(0, offset), text.length);
-  const mirror = createEditorMirror();
-  const marker = document.createElement("span");
-  const character = Array.from(text.slice(safeOffset))[0];
-  const canWrapCharacter = character && character !== "\n";
-
-  marker.textContent = canWrapCharacter ? character : "\u200b";
-  mirror.append(
-    document.createTextNode(text.slice(0, safeOffset)),
-    marker,
-    document.createTextNode(text.slice(
-      safeOffset + (canWrapCharacter ? character.length : 0),
-    )),
-  );
-
-  const position = {
-    left: marker.offsetLeft,
-    top: marker.offsetTop,
-  };
-  mirror.remove();
-  return position;
-}
-
-let caretMarkerFrame = null;
-
-function updateCaretMarker() {
-  caretMarkerFrame = null;
-  const editor = elements.editor;
-  const isCollapsed = editor.selectionStart === editor.selectionEnd;
-  const shouldShow = document.activeElement === editor
-    && !editor.disabled
-    && isCollapsed;
-
-  if (!shouldShow) {
-    elements.caretMarker.classList.remove("is-visible");
-    return;
-  }
-
-  const editorStyle = window.getComputedStyle(editor);
-  const lineHeight = Number.parseFloat(editorStyle.lineHeight)
-    || Number.parseFloat(editorStyle.fontSize) * 1.65;
-  const position = getEditorOffsetPosition(editor.selectionStart);
-  const caretLeft = position.left - editor.scrollLeft;
-  const caretTop = position.top - editor.scrollTop;
-  const markerLeft = caretLeft - 4;
-  const markerTop = caretTop + lineHeight;
-  const isInView = caretLeft >= 0
-    && caretLeft < editor.clientWidth
-    && markerTop + 6 > 0
-    && markerTop < editor.clientHeight;
-
-  if (!isInView) {
-    elements.caretMarker.classList.remove("is-visible");
-    return;
-  }
-
-  elements.caretMarker.style.left = `${markerLeft}px`;
-  elements.caretMarker.style.top = `${markerTop}px`;
-  elements.caretMarker.classList.add("is-visible");
-}
-
-function scheduleCaretMarkerUpdate() {
-  if (caretMarkerFrame !== null) return;
-  caretMarkerFrame = window.requestAnimationFrame(updateCaretMarker);
 }
 
 function getVisualLineArrowTarget(text, offset, key) {
@@ -694,7 +623,6 @@ function handleArrowSelection(event) {
 function applyWordWrap(enabled, persist = true) {
   elements.wordWrap.checked = enabled;
   elements.editor.wrap = enabled ? "soft" : "off";
-  scheduleCaretMarkerUpdate();
   if (persist) saveValue(STORAGE_KEYS.wordWrap, String(enabled));
 }
 
@@ -946,12 +874,6 @@ elements.editor.addEventListener("input", () => {
 ["click", "keyup", "select"].forEach((eventName) => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
-
-elements.editor.addEventListener("focus", scheduleCaretMarkerUpdate);
-elements.editor.addEventListener("blur", scheduleCaretMarkerUpdate);
-elements.editor.addEventListener("scroll", scheduleCaretMarkerUpdate);
-window.addEventListener("resize", scheduleCaretMarkerUpdate);
-window.visualViewport?.addEventListener("resize", scheduleCaretMarkerUpdate);
 
 window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
