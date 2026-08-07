@@ -115,6 +115,7 @@ let editorHistoryBusy = false;
 const handledHistoryKeyPresses = new Set();
 let lastBeforeInputHistoryTime = 0;
 let lastControlKeyActivityTime = 0;
+let lastAltKeyActivityTime = 0;
 
 function loadValue(key, fallback = "") {
   try {
@@ -369,6 +370,7 @@ const LEGACY_ARROW_KEYS = {
 
 let physicalShiftPressed = false;
 let physicalControlPressed = false;
+let physicalAltPressed = false;
 
 function hasUnknownKeyboardKey(event) {
   return !event.key || event.key === "Unidentified";
@@ -400,6 +402,12 @@ function isControlKeyEvent(event) {
   return keyCode === 17 || (hasUnknownKeyboardKey(event) && [113, 114].includes(keyCode));
 }
 
+function isAltKeyEvent(event) {
+  if (event.key === "Alt" || event.code === "AltLeft" || event.code === "AltRight") return true;
+  const keyCode = event.keyCode || event.which;
+  return keyCode === 18 || (hasUnknownKeyboardKey(event) && [57, 58].includes(keyCode));
+}
+
 function hasShiftModifier(event) {
   return event.shiftKey || physicalShiftPressed || event.getModifierState?.("Shift") === true;
 }
@@ -407,6 +415,11 @@ function hasShiftModifier(event) {
 function hasControlModifier(event) {
   return event.ctrlKey || physicalControlPressed
     || event.getModifierState?.("Control") === true;
+}
+
+function hasAltModifier(event) {
+  return event.altKey || physicalAltPressed
+    || event.getModifierState?.("Alt") === true;
 }
 
 function getPreviousCharacterStart(text, offset) {
@@ -965,7 +978,6 @@ function redoEditorChange() {
 function handleEditorHistoryShortcut(event) {
   const editorHasFocus = document.activeElement === elements.editor;
   if (!editorHasFocus && event.target !== elements.editor) return;
-  if (event.altKey) return;
 
   const key = getHistoryShortcutKey(event);
   if (!key) return;
@@ -984,8 +996,9 @@ function handleEditorHistoryShortcut(event) {
   }
 
   const hasRecentAndroidControl = Date.now() - lastControlKeyActivityTime < 400;
-  if (!hasControlModifier(event) && !event.metaKey
-    && !directCommand && !hasRecentAndroidControl) return;
+  const hasRecentAndroidAlt = Date.now() - lastAltKeyActivityTime < 400;
+  if (!hasControlModifier(event) && !hasAltModifier(event) && !event.metaKey
+    && !directCommand && !hasRecentAndroidControl && !hasRecentAndroidAlt) return;
 
   event.preventDefault();
   if (event.type === "keydown") handledHistoryKeyPresses.add(key);
@@ -1222,6 +1235,10 @@ window.addEventListener("keydown", (event) => {
     physicalControlPressed = true;
     lastControlKeyActivityTime = Date.now();
   }
+  if (isAltKeyEvent(event)) {
+    physicalAltPressed = true;
+    lastAltKeyActivityTime = Date.now();
+  }
   handleEditorHistoryShortcut(event);
 }, true);
 
@@ -1232,14 +1249,20 @@ window.addEventListener("keyup", (event) => {
     physicalControlPressed = false;
     lastControlKeyActivityTime = Date.now();
   }
+  if (isAltKeyEvent(event)) {
+    physicalAltPressed = false;
+    lastAltKeyActivityTime = Date.now();
+  }
 }, true);
 
 window.addEventListener("blur", () => {
   physicalShiftPressed = false;
   physicalControlPressed = false;
+  physicalAltPressed = false;
   handledHistoryKeyPresses.clear();
   lastBeforeInputHistoryTime = 0;
   lastControlKeyActivityTime = 0;
+  lastAltKeyActivityTime = 0;
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
