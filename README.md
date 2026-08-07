@@ -2,6 +2,8 @@
 
 可直接部署到 GitHub Pages 的純前端文字編輯器。使用 `{{ }}` 標記要交給 AI 潤飾的文字；完成後移除雙大括號，以 `#潤飾前------------------` 上下包圍原文，並在下方插入不含標記的潤飾結果。
 
+網站支援 PWA，可在 Android Chrome 使用「安裝應用程式」或「加到主畫面」，也可在 iPhone／iPad Safari 使用「加入主畫面」。安裝後能以獨立視窗啟動，已快取的編輯器介面可離線開啟。
+
 ## 功能
 
 - 支援 CGU、ChatGPT（OpenAI）、Gemini（Google AI）與 Claude（Anthropic）
@@ -29,6 +31,7 @@
 - API 設定框內可下載 Markdown，或清除所有本機記錄
 - 複製全文
 - 手機版精簡介面
+- 支援 Android、iPhone 與 iPad 安裝為 PWA，並提供離線 App Shell
 - 無外部套件、無建置步驟
 
 ## 使用方式
