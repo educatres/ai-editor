@@ -366,11 +366,7 @@ function findHorizontalToken(text, cursor, direction) {
   return offset < text.length ? getTokenRangeAt(text, offset) : null;
 }
 
-function getVisualLineArrowTarget(text, offset, key) {
-  if (!elements.wordWrap.checked || !window.getSelection()?.modify) {
-    return getArrowSelectionTarget(text, offset, key);
-  }
-
+function createEditorMirror() {
   const editorStyle = window.getComputedStyle(elements.editor);
   const mirror = document.createElement("div");
   mirror.setAttribute("aria-hidden", "true");
@@ -399,10 +395,18 @@ function getVisualLineArrowTarget(text, offset, key) {
     opacity: "0",
     pointerEvents: "none",
   });
+  document.body.appendChild(mirror);
+  return mirror;
+}
 
+function getVisualLineArrowTarget(text, offset, key) {
+  if (!elements.wordWrap.checked || !window.getSelection()?.modify) {
+    return getArrowSelectionTarget(text, offset, key);
+  }
+
+  const mirror = createEditorMirror();
   const textNode = document.createTextNode(text || "\u200b");
   mirror.appendChild(textNode);
-  document.body.appendChild(mirror);
 
   const selection = window.getSelection();
   const range = document.createRange();
@@ -428,6 +432,43 @@ function getVisualLineArrowTarget(text, offset, key) {
   }
 
   return Math.min(Math.max(0, target), text.length);
+}
+
+function scrollNavigationOffsetIntoView(offset) {
+  const text = elements.editor.value;
+  if (!text || offset < 0 || offset >= text.length) return;
+
+  const mirror = createEditorMirror();
+  const marker = document.createElement("span");
+  const character = Array.from(text.slice(offset))[0] ?? "\u200b";
+  marker.textContent = character;
+  mirror.append(
+    document.createTextNode(text.slice(0, offset)),
+    marker,
+    document.createTextNode(text.slice(offset + character.length)),
+  );
+
+  const editorStyle = window.getComputedStyle(elements.editor);
+  const lineHeight = Number.parseFloat(editorStyle.lineHeight)
+    || Number.parseFloat(editorStyle.fontSize) * 1.65;
+  const paddingTop = Number.parseFloat(editorStyle.paddingTop) || 0;
+  const paddingBottom = Number.parseFloat(editorStyle.paddingBottom) || 0;
+  const targetTop = marker.offsetTop;
+  const targetBottom = targetTop + lineHeight;
+  const visibleTop = elements.editor.scrollTop + paddingTop;
+  const visibleBottom = elements.editor.scrollTop
+    + elements.editor.clientHeight
+    - paddingBottom;
+
+  if (targetTop < visibleTop) {
+    elements.editor.scrollTop = Math.max(0, targetTop - paddingTop);
+  } else if (targetBottom > visibleBottom) {
+    elements.editor.scrollTop = targetBottom
+      - elements.editor.clientHeight
+      + paddingBottom;
+  }
+
+  mirror.remove();
 }
 
 function findTokenNearVerticalTarget(text, target) {
@@ -505,6 +546,7 @@ function selectTokenWithArrow(key) {
     end: selection.end,
     offset: selection.navigationOffset,
   };
+  scrollNavigationOffsetIntoView(selection.navigationOffset);
 }
 
 const handledControlArrowKeys = new Set();
