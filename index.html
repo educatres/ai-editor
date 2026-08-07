@@ -187,7 +187,7 @@
         <ol>
           <li>選擇 AI 供應商，輸入 API Key，確認 Endpoint 與模型後按「儲存」。</li>
           <li>按「模式」可選擇全文潤飾、只潤飾 <code>{{ }}</code>，或提供全文上下文但只潤飾 <code>{{ }}</code>。</li>
-          <li>局部潤飾時，以 <code>{{ 要潤飾的文字 }}</code> 標記內容，再按「潤飾」。</li>
+          <li>局部潤飾時，每次只能用一組 <code>{{ 要潤飾的文字 }}</code> 標記內容；超過一組會停止並顯示警告。</li>
           <li>若大括號只作為一般文字，局部潤飾時可使用 <code>\{</code> 與 <code>\}</code>。</li>
           <li>Search 可持續搜尋上一個或下一個結果；按「關閉」才會隱藏搜尋列。</li>
           <li>System prompt 已整合在「模式」視窗，可選擇取代原內容，或以分隔線追加範本。</li>
@@ -203,6 +203,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=36"></script>
+  <script type="module" src="app.js?v=37"></script>
 </body>
 </html>

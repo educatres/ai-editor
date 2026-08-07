@@ -842,15 +842,44 @@ function validateSettings(settings) {
   }
 }
 
+function captureEditorViewport() {
+  return {
+    scrollTop: elements.editor.scrollTop,
+    scrollLeft: elements.editor.scrollLeft,
+    selectionStart: elements.editor.selectionStart,
+    selectionEnd: elements.editor.selectionEnd,
+    selectionDirection: elements.editor.selectionDirection,
+  };
+}
+
+function restoreEditorViewport(viewport) {
+  elements.editor.scrollTop = viewport.scrollTop;
+  elements.editor.scrollLeft = viewport.scrollLeft;
+  syncLineNumberScroll();
+}
+
+function replaceEditorValuePreservingViewport(value, viewport) {
+  elements.editor.value = value;
+  const selectionStart = Math.min(viewport.selectionStart, value.length);
+  const selectionEnd = Math.min(viewport.selectionEnd, value.length);
+  elements.editor.setSelectionRange(
+    selectionStart,
+    selectionEnd,
+    viewport.selectionDirection,
+  );
+  restoreEditorViewport(viewport);
+  window.requestAnimationFrame(() => restoreEditorViewport(viewport));
+}
+
 async function runPolish() {
   const originalText = elements.editor.value;
   const settings = getSettings();
+  const editorViewport = captureEditorViewport();
 
   try {
-    validateSettings(settings);
-
     if (activePolishMode === "full") {
       if (!originalText.trim()) throw new Error("沒有可潤飾的文字。");
+      validateSettings(settings);
 
       saveSettings();
       saveValue(STORAGE_KEYS.editor, originalText);
@@ -858,7 +887,7 @@ async function runPolish() {
 
       const result = await polishText(originalText, settings);
       const output = renderFullPolishedDocument(originalText, result);
-      elements.editor.value = output;
+      replaceEditorValuePreservingViewport(output, editorViewport);
       updateActiveLineFromCursor();
       scheduleLineNumberRender();
       saveValue(STORAGE_KEYS.editor, output);
@@ -866,6 +895,9 @@ async function runPolish() {
     }
 
     const blocks = findPolishBlocks(originalText);
+    if (blocks.length > 1) {
+      throw new Error("文件中只能有一組 {{ }} 標記，請移除多餘的標記後再潤飾。");
+    }
     const nonEmptyBlocks = blocks.filter((block) => block.content.trim());
 
     if (!blocks.length) {
@@ -874,6 +906,7 @@ async function runPolish() {
     if (!nonEmptyBlocks.length) {
       throw new Error("{{ }} 內沒有可潤飾的文字。");
     }
+    validateSettings(settings);
 
     saveSettings();
     saveValue(STORAGE_KEYS.editor, originalText);
@@ -900,7 +933,7 @@ async function runPolish() {
     }
 
     const output = renderPolishedDocument(originalText, blocks, results);
-    elements.editor.value = output;
+    replaceEditorValuePreservingViewport(output, editorViewport);
     updateActiveLineFromCursor();
     scheduleLineNumberRender();
     saveValue(STORAGE_KEYS.editor, output);
@@ -909,7 +942,7 @@ async function runPolish() {
     if (!elements.apiKey.value.trim()) elements.settingsDialog.showModal();
   } finally {
     setBusy(false);
-    elements.editor.focus();
+    elements.editor.focus({ preventScroll: true });
   }
 }
 
