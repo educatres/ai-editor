@@ -136,7 +136,7 @@ function formatStorageBytes(bytes) {
 function updateLocalStorageUsage() {
   const bytes = getLocalStorageUsageBytes();
   if (bytes === null) {
-    elements.storageUsage.textContent = "LocalStorage --";
+    elements.storageUsage.textContent = "已用容量 --";
     elements.storageUsage.title = "無法讀取 LocalStorage 使用容量";
     return;
   }
@@ -145,7 +145,7 @@ function updateLocalStorageUsage() {
   const percentageLabel = bytes > 0 && percentage < 0.01
     ? "<0.01%"
     : `${percentage < 10 ? percentage.toFixed(2) : percentage.toFixed(1)}%`;
-  elements.storageUsage.textContent = `LocalStorage ${percentageLabel}`;
+  elements.storageUsage.textContent = `已用容量 ${percentageLabel}`;
   elements.storageUsage.title = `估算已使用 ${formatStorageBytes(bytes)} / 5 MiB`;
 }
 
