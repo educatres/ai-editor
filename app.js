@@ -305,7 +305,9 @@ function getArrowSelectionTarget(text, offset, key) {
 function getExtendedSelection(key, start, end, direction) {
   const focus = start === end || direction !== "backward" ? end : start;
   const anchor = start === end ? start : direction === "backward" ? end : start;
-  const target = getArrowSelectionTarget(elements.editor.value, focus, key);
+  const target = key === "ArrowUp" || key === "ArrowDown"
+    ? getVisualLineArrowTarget(elements.editor.value, focus, key)
+    : getArrowSelectionTarget(elements.editor.value, focus, key);
   if (target === focus) return null;
 
   return {
