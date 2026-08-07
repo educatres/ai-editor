@@ -272,6 +272,7 @@ const LEGACY_ARROW_KEYS = {
 };
 
 let physicalShiftPressed = false;
+let physicalControlPressed = false;
 
 function normalizeArrowKey(event) {
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
@@ -289,17 +290,69 @@ function isShiftKeyEvent(event) {
     || event.keyCode === 16 || event.which === 16;
 }
 
+function isControlKeyEvent(event) {
+  return event.key === "Control" || event.key === "Ctrl"
+    || event.code === "ControlLeft" || event.code === "ControlRight"
+    || event.keyCode === 17 || event.which === 17;
+}
+
 function hasShiftModifier(event) {
   return event.shiftKey || physicalShiftPressed || event.getModifierState?.("Shift") === true;
+}
+
+function hasControlModifier(event) {
+  return event.ctrlKey || physicalControlPressed
+    || event.getModifierState?.("Control") === true;
+}
+
+function selectWhitespaceToken(direction) {
+  const text = elements.editor.value;
+  const hasSelection = elements.editor.selectionStart !== elements.editor.selectionEnd;
+  let cursor = direction < 0
+    ? elements.editor.selectionStart
+    : elements.editor.selectionEnd;
+
+  if (direction < 0) {
+    if (!hasSelection && cursor > 0 && !/\s/u.test(text[cursor - 1])) {
+      let end = cursor;
+      while (end < text.length && !/\s/u.test(text[end])) end += 1;
+      while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
+      elements.editor.setSelectionRange(cursor, end, "backward");
+      updateCursorPosition();
+      return;
+    }
+
+    while (cursor > 0 && /\s/u.test(text[cursor - 1])) cursor -= 1;
+    if (cursor === 0) return;
+
+    const end = cursor;
+    while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
+    elements.editor.setSelectionRange(cursor, end, "backward");
+  } else {
+    if (!hasSelection && cursor < text.length && !/\s/u.test(text[cursor])) {
+      while (cursor > 0 && !/\s/u.test(text[cursor - 1])) cursor -= 1;
+    } else {
+      while (cursor < text.length && /\s/u.test(text[cursor])) cursor += 1;
+    }
+    if (cursor >= text.length) return;
+
+    const start = cursor;
+    while (cursor < text.length && !/\s/u.test(text[cursor])) cursor += 1;
+    elements.editor.setSelectionRange(start, cursor, "forward");
+  }
+
+  updateCursorPosition();
 }
 
 function handleArrowSelection(event) {
   const arrowKey = normalizeArrowKey(event);
   if (!arrowKey) return;
 
-  if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+  if (hasControlModifier(event) && !event.metaKey && !event.altKey && !event.shiftKey) {
     event.preventDefault();
-    extendSelectionWithArrow(arrowKey);
+    if (arrowKey === "ArrowLeft") selectWhitespaceToken(-1);
+    else if (arrowKey === "ArrowRight") selectWhitespaceToken(1);
+    else extendSelectionWithArrow(arrowKey);
     return;
   }
 
@@ -589,14 +642,17 @@ elements.editor.addEventListener("input", () => {
 
 document.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;
+  if (isControlKeyEvent(event)) physicalControlPressed = true;
 }, true);
 
 document.addEventListener("keyup", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = false;
+  if (isControlKeyEvent(event)) physicalControlPressed = false;
 }, true);
 
 window.addEventListener("blur", () => {
   physicalShiftPressed = false;
+  physicalControlPressed = false;
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
