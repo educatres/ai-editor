@@ -6,6 +6,7 @@
   --danger: #a32020;
   --primary: #111;
   --editor-font-size: 16px;
+  --editor-line-height: 26.4px;
 }
 
 * { box-sizing: border-box; }
@@ -51,16 +52,6 @@ button { cursor: pointer; }
   gap: 5px;
   flex: 0 0 auto;
   width: max-content;
-}
-
-.cursor-position {
-  min-width: 42px;
-  align-self: center;
-  color: var(--muted);
-  text-align: right;
-  font: 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .toolbar-check,
@@ -128,7 +119,9 @@ button.danger { color: var(--danger); }
   border-right: 1px solid var(--border);
   background: #f7f7f7;
   color: var(--muted);
-  font: var(--editor-font-size)/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font-size: max(8px, calc(var(--editor-font-size) - 4px));
+  line-height: 1;
   font-variant-numeric: tabular-nums;
   user-select: none;
   pointer-events: none;
@@ -147,7 +140,7 @@ button.danger { color: var(--danger); }
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  height: 1.65em;
+  height: var(--editor-line-height);
   padding: 0 6px 0 4px;
   white-space: nowrap;
 }

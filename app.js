@@ -50,7 +50,6 @@ const elements = {
   editor: document.querySelector("#editor"),
   lineNumbers: document.querySelector("#lineNumbers"),
   lineNumberContent: document.querySelector("#lineNumberContent"),
-  cursorPosition: document.querySelector("#cursorPosition"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
   copyBtn: document.querySelector("#copyBtn"),
@@ -184,20 +183,16 @@ function applyFontSize(value, persist = true) {
     Math.max(DEFAULTS.minFontSize, Number.isFinite(numeric) ? numeric : DEFAULTS.fontSize),
   );
   document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
+  document.documentElement.style.setProperty("--editor-line-height", `${editorFontSize * 1.65}px`);
   elements.zoomInBtn.disabled = editorFontSize >= DEFAULTS.maxFontSize;
   elements.zoomOutBtn.disabled = editorFontSize <= DEFAULTS.minFontSize;
   scheduleLineNumberRender();
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
-function updateCursorPosition() {
+function updateActiveLineFromCursor() {
   const textBeforeCursor = elements.editor.value.slice(0, elements.editor.selectionStart);
-  const lines = textBeforeCursor.split("\n");
-  const line = lines.length;
-  const character = Array.from(lines.at(-1) ?? "").length + 1;
-  elements.cursorPosition.value = `${line}:${character}`;
-  elements.cursorPosition.textContent = `${line}:${character}`;
-  updateActiveLineNumber(line);
+  updateActiveLineNumber(textBeforeCursor.split("\n").length);
 }
 
 function offsetAtCharacter(lineText, character) {
@@ -252,7 +247,7 @@ function getExtendedSelection(key, start, end, direction) {
 function applySelection(selection) {
   if (!selection) return;
   elements.editor.setSelectionRange(selection.start, selection.end, selection.direction);
-  updateCursorPosition();
+  updateActiveLineFromCursor();
 }
 
 function extendSelectionWithArrow(key) {
@@ -719,7 +714,7 @@ function loadState() {
   applyPolishMode(POLISH_MODES.has(storedPolishMode) ? storedPolishMode : migratedPolishMode, false);
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
-  updateCursorPosition();
+  updateActiveLineFromCursor();
 }
 
 function saveSettings() {
@@ -792,7 +787,7 @@ async function runPolish() {
       const result = await polishText(originalText, settings);
       const output = renderFullPolishedDocument(originalText, result);
       elements.editor.value = output;
-      updateCursorPosition();
+      updateActiveLineFromCursor();
       scheduleLineNumberRender();
       saveValue(STORAGE_KEYS.editor, output);
       return;
@@ -834,7 +829,7 @@ async function runPolish() {
 
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
-    updateCursorPosition();
+    updateActiveLineFromCursor();
     scheduleLineNumberRender();
     saveValue(STORAGE_KEYS.editor, output);
   } catch (error) {
@@ -913,7 +908,7 @@ function clearRecords() {
   providerConfigs = {};
   activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
-  updateCursorPosition();
+  updateActiveLineFromCursor();
   elements.searchInput.value = "";
   elements.searchForm.hidden = true;
   elements.replacePrompt.checked = false;
@@ -927,7 +922,7 @@ function clearRecords() {
 
 let saveTimer;
 elements.editor.addEventListener("input", () => {
-  updateCursorPosition();
+  updateActiveLineFromCursor();
   scheduleLineNumberRender();
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
@@ -936,7 +931,7 @@ elements.editor.addEventListener("input", () => {
 });
 
 ["click", "keyup", "select"].forEach((eventName) => {
-  elements.editor.addEventListener(eventName, updateCursorPosition);
+  elements.editor.addEventListener(eventName, updateActiveLineFromCursor);
 });
 
 elements.editor.addEventListener("scroll", syncLineNumberScroll);
@@ -962,7 +957,7 @@ elements.editor.addEventListener("keydown", handleArrowSelection);
 elements.editor.addEventListener("keyup", handleArrowSelection);
 
 document.addEventListener("selectionchange", () => {
-  if (document.activeElement === elements.editor) updateCursorPosition();
+  if (document.activeElement === elements.editor) updateActiveLineFromCursor();
 });
 
 elements.searchInput.addEventListener("input", () => {
