@@ -6,6 +6,7 @@
   --danger: #a32020;
   --primary: #111;
   --editor-font-size: 16px;
+  --editor-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
   --editor-line-height: 26.4px;
 }
 
@@ -119,7 +120,7 @@ button.danger { color: var(--danger); }
   border-right: 1px solid var(--border);
   background: #f7f7f7;
   color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font-family: var(--editor-font-family);
   font-size: var(--editor-font-size);
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -162,7 +163,7 @@ button.danger { color: var(--danger); }
   padding: 12px;
   background: #fff;
   color: #111;
-  font: var(--editor-font-size)/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font: var(--editor-font-size)/1.65 var(--editor-font-family);
   tab-size: 2;
 }
 
