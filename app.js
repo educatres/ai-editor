@@ -434,7 +434,7 @@ function getVisualLineArrowTarget(text, offset, key) {
   return Math.min(Math.max(0, target), text.length);
 }
 
-function scrollNavigationOffsetIntoView(offset) {
+function scrollNavigationOffsetIntoView(offset, key, skippedLineCount = 0) {
   const text = elements.editor.value;
   if (!text || offset < 0 || offset >= text.length) return;
 
@@ -455,17 +455,26 @@ function scrollNavigationOffsetIntoView(offset) {
   const paddingBottom = Number.parseFloat(editorStyle.paddingBottom) || 0;
   const targetTop = marker.offsetTop;
   const targetBottom = targetTop + lineHeight;
-  const visibleTop = elements.editor.scrollTop + paddingTop;
+  const contextMargin = skippedLineCount > 0
+    && (key === "ArrowUp" || key === "ArrowDown")
+    ? lineHeight
+    : 0;
+  const visibleTop = elements.editor.scrollTop + paddingTop + contextMargin;
   const visibleBottom = elements.editor.scrollTop
     + elements.editor.clientHeight
-    - paddingBottom;
+    - paddingBottom
+    - contextMargin;
 
   if (targetTop < visibleTop) {
-    elements.editor.scrollTop = Math.max(0, targetTop - paddingTop);
+    elements.editor.scrollTop = Math.max(
+      0,
+      targetTop - paddingTop - contextMargin,
+    );
   } else if (targetBottom > visibleBottom) {
     elements.editor.scrollTop = targetBottom
       - elements.editor.clientHeight
-      + paddingBottom;
+      + paddingBottom
+      + contextMargin;
   }
 
   mirror.remove();
@@ -496,6 +505,7 @@ function findTokenNearVerticalTarget(text, target) {
 
 function findVerticalToken(text, source, key) {
   let navigationOffset = source;
+  let skippedLineCount = 0;
   const visitedOffsets = new Set([source]);
 
   while (true) {
@@ -504,7 +514,14 @@ function findVerticalToken(text, source, key) {
     visitedOffsets.add(target);
 
     const range = findTokenNearVerticalTarget(text, target);
-    if (range) return { ...range, navigationOffset: target };
+    if (range) {
+      return {
+        ...range,
+        navigationOffset: target,
+        skippedLineCount,
+      };
+    }
+    skippedLineCount += 1;
     navigationOffset = target;
   }
 }
@@ -534,6 +551,7 @@ function getTokenSelection(key) {
     ...range,
     direction: key === "ArrowLeft" || key === "ArrowUp" ? "backward" : "forward",
     navigationOffset: range.navigationOffset ?? range.start,
+    skippedLineCount: range.skippedLineCount ?? 0,
   };
 }
 
@@ -546,7 +564,11 @@ function selectTokenWithArrow(key) {
     end: selection.end,
     offset: selection.navigationOffset,
   };
-  scrollNavigationOffsetIntoView(selection.navigationOffset);
+  scrollNavigationOffsetIntoView(
+    selection.navigationOffset,
+    key,
+    selection.skippedLineCount,
+  );
 }
 
 const handledControlArrowKeys = new Set();
