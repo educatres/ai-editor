@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import {
   ORIGINAL_MARKER,
   PROVIDERS,
+  CONTEXT_MODE_SYSTEM_PROMPT,
+  appendContextModeSystemPrompt,
+  buildContextPolishInput,
   buildProviderRequest,
   buildResponsesUrl,
   extractProviderText,
@@ -152,6 +155,23 @@ assert.equal(
 assert.equal(
   unescapeSpecialBraces(String.raw`\{文字\} \n \* \\`),
   String.raw`{文字} \n \* \\`,
+);
+
+const contextSample = "前文內容\n{{第一個目標}}\n中間上下文\n{{第二個目標}}\n結尾內容";
+const contextBlocks = findPolishBlocks(contextSample);
+const contextInput = buildContextPolishInput(contextSample, contextBlocks[1], 1, 2);
+assert.equal(contextInput.includes("前文內容"), true);
+assert.equal(contextInput.includes("中間上下文"), true);
+assert.equal(contextInput.includes("結尾內容"), true);
+assert.equal(
+  contextInput.includes("{{<<<POLISH_TARGET_START>>>第二個目標<<<POLISH_TARGET_END>>>}}"),
+  true,
+);
+assert.equal(contextInput.includes("第 2 組，共 2 組"), true);
+assert.equal(CONTEXT_MODE_SYSTEM_PROMPT.includes("其他文字只供理解上下文，不得改寫"), true);
+assert.equal(
+  appendContextModeSystemPrompt("原本的 System prompt"),
+  `原本的 System prompt\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${CONTEXT_MODE_SYSTEM_PROMPT}`,
 );
 
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 0, 1), { start: 0, end: 5 });

@@ -164,6 +164,37 @@ input, select, .dialog-form textarea {
 
 .dialog-form textarea { resize: vertical; line-height: 1.5; }
 
+.mode-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.mode-options legend {
+  padding: 0 4px;
+  font-size: 13px;
+}
+
+.mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.mode-option:hover { background: #f5f5f5; }
+.mode-option input {
+  width: auto;
+  margin: 3px 0 0;
+}
+.mode-option span { display: grid; gap: 2px; }
+.mode-option small { color: var(--muted); line-height: 1.45; }
+
 .prompt-presets {
   display: grid;
   gap: 6px;

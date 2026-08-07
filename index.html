@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>AI Editor</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <main class="app">
     <header class="toolbar" aria-label="工具列">
       <div class="toolbar-actions">
         <button id="polishBtn" type="button" class="primary">潤飾</button>
-        <label class="toolbar-check">
-          <input id="fullPolish" type="checkbox">
-          全文潤飾
-        </label>
+        <button id="modeBtn" type="button">模式</button>
         <button id="copyBtn" type="button">複製</button>
         <button id="searchBtn" type="button">Search</button>
         <button id="promptBtn" type="button">System prompt</button>
@@ -49,6 +46,47 @@
       ></textarea>
     </div>
   </main>
+
+  <dialog id="modeDialog">
+    <form method="dialog" class="dialog-form" id="modeForm">
+      <div class="dialog-head">
+        <strong>潤飾模式</strong>
+        <button type="button" class="icon-btn" data-close="modeDialog" aria-label="關閉">×</button>
+      </div>
+
+      <fieldset class="mode-options">
+        <legend>選擇模式</legend>
+        <label class="mode-option">
+          <input type="radio" name="polishMode" value="full">
+          <span>
+            <strong>全文潤飾</strong>
+            <small>忽略大括號與跳脫字元，將全文送給 AI 潤飾。</small>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="polishMode" value="marked" checked>
+          <span>
+            <strong>只潤飾 {{ }}</strong>
+            <small>只將每組雙大括號內的文字送給 AI。</small>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="polishMode" value="context">
+          <span>
+            <strong>只潤飾 {{ }} 但含上下文</strong>
+            <small>將完整文章提供給 AI 作為上下文，但只接受目標雙大括號內的潤飾結果。</small>
+          </span>
+        </label>
+      </fieldset>
+
+      <p class="hint">含上下文模式會自動附加專用 System prompt，且不會修改你保存的 System prompt。</p>
+
+      <div class="dialog-actions">
+        <button type="button" data-close="modeDialog">取消</button>
+        <button type="submit" class="primary">套用</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="settingsDialog">
     <form method="dialog" class="dialog-form" id="settingsForm">
@@ -97,8 +135,8 @@
         <strong id="usageHelpTitle">操作說明</strong>
         <ol>
           <li>選擇 AI 供應商，輸入 API Key，確認 Endpoint 與模型後按「儲存」。</li>
-          <li>局部潤飾：以 <code>{{ 要潤飾的文字 }}</code> 標記內容，再按「潤飾」。</li>
-          <li>全文潤飾：勾選工具列的「全文潤飾」，編輯器內所有文字都會送交 AI。</li>
+          <li>按「模式」可選擇全文潤飾、只潤飾 <code>{{ }}</code>，或提供全文上下文但只潤飾 <code>{{ }}</code>。</li>
+          <li>局部潤飾時，以 <code>{{ 要潤飾的文字 }}</code> 標記內容，再按「潤飾」。</li>
           <li>若大括號只作為一般文字，局部潤飾時可使用 <code>\{</code> 與 <code>\}</code>。</li>
           <li>Search 可持續搜尋上一個或下一個結果；按「關閉」才會隱藏搜尋列。</li>
           <li>System prompt 可選擇取代原內容，或以分隔線追加範本。</li>
@@ -141,6 +179,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=10"></script>
+  <script type="module" src="app.js?v=11"></script>
 </body>
 </html>

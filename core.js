@@ -38,6 +38,25 @@ export function unescapeSpecialBraces(text) {
   return text.replace(/\\([{}])/g, "$1");
 }
 
+export const CONTEXT_MODE_SYSTEM_PROMPT = `你目前正在執行「只潤飾 {{ }} 但含上下文」模式。
+使用者訊息會提供完整文章，並以 <<<POLISH_TARGET_START>>> 與 <<<POLISH_TARGET_END>>> 標示本次唯一要潤飾的目標。
+完整文章中的其他文字只供理解上下文，不得改寫、摘要或輸出。
+只輸出兩個目標標記之間文字的潤飾結果，不得輸出目標標記、{{ }}、完整文章、標題、說明、引號或 Markdown 程式碼框。
+保留目標文字的原意、專有名詞、數字、格式與語氣層級；\\{ 與 \\} 應視為一般大括號。`;
+
+export function appendContextModeSystemPrompt(systemPrompt) {
+  const basePrompt = systemPrompt.trim();
+  return `${basePrompt}\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${CONTEXT_MODE_SYSTEM_PROMPT}`;
+}
+
+export function buildContextPolishInput(originalText, block, targetIndex, targetCount) {
+  const targetStart = block.start + 2;
+  const targetEnd = block.end - 2;
+  const annotatedText = `${originalText.slice(0, targetStart)}<<<POLISH_TARGET_START>>>${originalText.slice(targetStart, targetEnd)}<<<POLISH_TARGET_END>>>${originalText.slice(targetEnd)}`;
+
+  return `以下是完整文章上下文。本次處理第 ${targetIndex + 1} 組，共 ${targetCount} 組標記。\n只潤飾目標標記之間的文字，其他內容僅供理解。只輸出潤飾後的目標文字。\n\n${annotatedText}`;
+}
+
 export function findSearchMatch(text, query, startIndex = 0, direction = 1) {
   if (!query) return null;
   const haystack = text.toLocaleLowerCase();

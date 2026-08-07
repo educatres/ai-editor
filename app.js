@@ -1,5 +1,7 @@
 import {
   PROVIDERS,
+  appendContextModeSystemPrompt,
+  buildContextPolishInput,
   buildProviderRequest,
   extractProviderText,
   findPolishBlocks,
@@ -8,7 +10,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=7";
+} from "./core.js?v=8";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -23,8 +25,11 @@ const STORAGE_KEYS = {
   fontSize: "cguAiEditor.fontSize",
   replacePrompt: "cguAiEditor.replacePrompt",
   fullPolish: "cguAiEditor.fullPolish",
+  polishMode: "cguAiEditor.polishMode",
   wordWrap: "cguAiEditor.wordWrap",
 };
+
+const POLISH_MODES = new Set(["full", "marked", "context"]);
 
 const DEFAULTS = {
   provider: "cgu",
@@ -34,6 +39,7 @@ const DEFAULTS = {
   fontSizeStep: 2,
   reasoningEffort: "medium",
   serviceTier: "default",
+  polishMode: "marked",
   systemPrompt: PROMPT_PRESETS.general.content,
 };
 
@@ -48,11 +54,13 @@ const elements = {
   zoomInBtn: document.querySelector("#zoomInBtn"),
   zoomOutBtn: document.querySelector("#zoomOutBtn"),
   clearBtn: document.querySelector("#clearBtn"),
-  fullPolish: document.querySelector("#fullPolish"),
+  modeBtn: document.querySelector("#modeBtn"),
   wordWrap: document.querySelector("#wordWrap"),
+  modeDialog: document.querySelector("#modeDialog"),
   settingsDialog: document.querySelector("#settingsDialog"),
   promptDialog: document.querySelector("#promptDialog"),
   searchForm: document.querySelector("#searchForm"),
+  modeForm: document.querySelector("#modeForm"),
   settingsForm: document.querySelector("#settingsForm"),
   promptForm: document.querySelector("#promptForm"),
   searchInput: document.querySelector("#searchInput"),
@@ -74,6 +82,7 @@ const elements = {
 let activeProvider = DEFAULTS.provider;
 let providerConfigs = {};
 let editorFontSize = DEFAULTS.fontSize;
+let activePolishMode = DEFAULTS.polishMode;
 
 function loadValue(key, fallback = "") {
   try {
@@ -180,6 +189,17 @@ function applyWordWrap(enabled, persist = true) {
   if (persist) saveValue(STORAGE_KEYS.wordWrap, String(enabled));
 }
 
+function applyPolishMode(mode, persist = true) {
+  activePolishMode = POLISH_MODES.has(mode) ? mode : DEFAULTS.polishMode;
+  const selected = elements.modeForm.querySelector(`[name="polishMode"][value="${activePolishMode}"]`);
+  if (selected) selected.checked = true;
+
+  const selectedLabel = selected?.closest("label")?.querySelector("strong")?.textContent ?? "潤飾模式";
+  elements.modeBtn.title = selectedLabel;
+  elements.modeBtn.setAttribute("aria-label", `潤飾模式：${selectedLabel}`);
+  if (persist) saveValue(STORAGE_KEYS.polishMode, activePolishMode);
+}
+
 function loadState() {
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
   loadProviderConfigs();
@@ -188,7 +208,9 @@ function loadState() {
   elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
   elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
   elements.replacePrompt.checked = loadValue(STORAGE_KEYS.replacePrompt, "false") === "true";
-  elements.fullPolish.checked = loadValue(STORAGE_KEYS.fullPolish, "false") === "true";
+  const storedPolishMode = loadValue(STORAGE_KEYS.polishMode, "");
+  const migratedPolishMode = loadValue(STORAGE_KEYS.fullPolish, "false") === "true" ? "full" : DEFAULTS.polishMode;
+  applyPolishMode(POLISH_MODES.has(storedPolishMode) ? storedPolishMode : migratedPolishMode, false);
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
 }
@@ -211,7 +233,7 @@ function setBusy(busy) {
   elements.settingsBtn.disabled = busy;
   elements.promptBtn.disabled = busy;
   elements.searchBtn.disabled = busy;
-  elements.fullPolish.disabled = busy;
+  elements.modeBtn.disabled = busy;
   elements.clearBtn.disabled = busy;
   elements.polishBtn.textContent = busy ? "潤飾中…" : "潤飾";
 }
@@ -253,7 +275,7 @@ async function runPolish() {
   try {
     validateSettings(settings);
 
-    if (elements.fullPolish.checked) {
+    if (activePolishMode === "full") {
       if (!originalText.trim()) throw new Error("沒有可潤飾的文字。");
 
       saveSettings();
@@ -282,9 +304,16 @@ async function runPolish() {
     setBusy(true);
 
     const results = new Map();
+    const polishSettings = activePolishMode === "context"
+      ? { ...settings, systemPrompt: appendContextModeSystemPrompt(settings.systemPrompt) }
+      : settings;
+
     for (let index = 0; index < nonEmptyBlocks.length; index += 1) {
       const block = nonEmptyBlocks[index];
-      const result = await polishText(unescapeSpecialBraces(block.content.trim()), settings);
+      const content = activePolishMode === "context"
+        ? buildContextPolishInput(originalText, block, index, nonEmptyBlocks.length)
+        : unescapeSpecialBraces(block.content.trim());
+      const result = await polishText(content, polishSettings);
       results.set(block.start, result);
     }
 
@@ -370,7 +399,7 @@ function clearRecords() {
   elements.searchInput.value = "";
   elements.searchForm.hidden = true;
   elements.replacePrompt.checked = false;
-  elements.fullPolish.checked = false;
+  applyPolishMode(DEFAULTS.polishMode, false);
   applyWordWrap(false, false);
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   renderProvider(DEFAULTS.provider);
@@ -400,6 +429,10 @@ elements.provider.addEventListener("change", () => {
   renderProvider(elements.provider.value);
 });
 elements.promptBtn.addEventListener("click", () => elements.promptDialog.showModal());
+elements.modeBtn.addEventListener("click", () => {
+  applyPolishMode(activePolishMode, false);
+  elements.modeDialog.showModal();
+});
 elements.polishBtn.addEventListener("click", runPolish);
 elements.copyBtn.addEventListener("click", copyEditor);
 elements.downloadBtn.addEventListener("click", downloadEditor);
@@ -422,8 +455,9 @@ elements.replacePrompt.addEventListener("change", () => {
   saveValue(STORAGE_KEYS.replacePrompt, String(elements.replacePrompt.checked));
 });
 
-elements.fullPolish.addEventListener("change", () => {
-  saveValue(STORAGE_KEYS.fullPolish, String(elements.fullPolish.checked));
+elements.modeForm.addEventListener("submit", () => {
+  const selectedMode = new FormData(elements.modeForm).get("polishMode");
+  applyPolishMode(String(selectedMode));
 });
 
 elements.wordWrap.addEventListener("change", () => {
