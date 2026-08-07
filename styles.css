@@ -69,6 +69,14 @@ button { cursor: pointer; }
   margin: 0;
 }
 
+.storage-usage {
+  align-self: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .search-bar {
   grid-row: 2;
   display: flex;

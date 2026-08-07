@@ -32,6 +32,7 @@ const STORAGE_KEYS = {
 };
 
 const POLISH_MODES = new Set(["full", "marked", "context"]);
+const LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
 
 const DEFAULTS = {
   provider: "cgu",
@@ -60,6 +61,7 @@ const elements = {
   clearBtn: document.querySelector("#clearBtn"),
   modeBtn: document.querySelector("#modeBtn"),
   wordWrap: document.querySelector("#wordWrap"),
+  storageUsage: document.querySelector("#storageUsage"),
   modeDialog: document.querySelector("#modeDialog"),
   settingsDialog: document.querySelector("#settingsDialog"),
   searchForm: document.querySelector("#searchForm"),
@@ -101,11 +103,50 @@ function saveValue(key, value) {
     localStorage.setItem(key, value);
   } catch (error) {
     reportError(`無法儲存至瀏覽器：${error.message}`);
+  } finally {
+    updateLocalStorageUsage();
   }
 }
 
 function removeAppStorage() {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  updateLocalStorageUsage();
+}
+
+function getLocalStorageUsageBytes() {
+  try {
+    let bytes = 0;
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index) ?? "";
+      const value = localStorage.getItem(key) ?? "";
+      bytes += (key.length + value.length) * 2;
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function formatStorageBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`;
+}
+
+function updateLocalStorageUsage() {
+  const bytes = getLocalStorageUsageBytes();
+  if (bytes === null) {
+    elements.storageUsage.textContent = "LocalStorage --";
+    elements.storageUsage.title = "無法讀取 LocalStorage 使用容量";
+    return;
+  }
+
+  const percentage = (bytes / LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES) * 100;
+  const percentageLabel = bytes > 0 && percentage < 0.01
+    ? "<0.01%"
+    : `${percentage < 10 ? percentage.toFixed(2) : percentage.toFixed(1)}%`;
+  elements.storageUsage.textContent = `LocalStorage ${percentageLabel}`;
+  elements.storageUsage.title = `估算已使用 ${formatStorageBytes(bytes)} / 5 MiB`;
 }
 
 function loadProviderConfigs() {
@@ -715,6 +756,7 @@ function loadState() {
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
   updateActiveLineFromCursor();
+  updateLocalStorageUsage();
 }
 
 function saveSettings() {

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>AI Editor</title>
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
   <main class="app">
@@ -22,6 +22,11 @@
           <input id="wordWrap" type="checkbox">
           換行
         </label>
+        <output
+          id="storageUsage"
+          class="storage-usage"
+          aria-label="LocalStorage 已使用容量"
+        >LocalStorage 0.00%</output>
       </div>
     </header>
 
@@ -183,6 +188,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=32"></script>
+  <script type="module" src="app.js?v=33"></script>
 </body>
 </html>
