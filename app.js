@@ -196,6 +196,68 @@ function updateCursorPosition() {
   elements.cursorPosition.textContent = `${line}:${character}`;
 }
 
+function offsetAtCharacter(lineText, character) {
+  return Array.from(lineText).slice(0, character).join("").length;
+}
+
+function getShiftArrowTarget(text, offset, key) {
+  if (key === "ArrowLeft") {
+    if (offset <= 0) return 0;
+    return offset - (Array.from(text.slice(0, offset)).at(-1)?.length ?? 1);
+  }
+
+  if (key === "ArrowRight") {
+    if (offset >= text.length) return text.length;
+    return offset + (Array.from(text.slice(offset))[0]?.length ?? 1);
+  }
+
+  const lineStart = offset === 0 ? 0 : text.lastIndexOf("\n", offset - 1) + 1;
+  const character = Array.from(text.slice(lineStart, offset)).length;
+
+  if (key === "ArrowUp") {
+    if (lineStart === 0) return offset;
+    const previousLineEnd = lineStart - 1;
+    const previousLineStart = previousLineEnd === 0
+      ? 0
+      : text.lastIndexOf("\n", previousLineEnd - 1) + 1;
+    const previousLine = text.slice(previousLineStart, previousLineEnd);
+    return previousLineStart + offsetAtCharacter(previousLine, character);
+  }
+
+  const lineEnd = text.indexOf("\n", offset);
+  if (lineEnd === -1) return offset;
+  const nextLineStart = lineEnd + 1;
+  const nextLineEnd = text.indexOf("\n", nextLineStart);
+  const nextLine = text.slice(nextLineStart, nextLineEnd === -1 ? text.length : nextLineEnd);
+  return nextLineStart + offsetAtCharacter(nextLine, character);
+}
+
+function ensureShiftArrowSelection(event) {
+  if (!event.shiftKey || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+    return;
+  }
+
+  const start = elements.editor.selectionStart;
+  const end = elements.editor.selectionEnd;
+  const direction = elements.editor.selectionDirection;
+  const focus = start === end || direction !== "backward" ? end : start;
+  const anchor = start === end ? start : direction === "backward" ? end : start;
+
+  window.requestAnimationFrame(() => {
+    if (elements.editor.selectionStart !== start || elements.editor.selectionEnd !== end) return;
+
+    const target = getShiftArrowTarget(elements.editor.value, focus, event.key);
+    if (target === focus) return;
+
+    elements.editor.setSelectionRange(
+      Math.min(anchor, target),
+      Math.max(anchor, target),
+      target < anchor ? "backward" : "forward",
+    );
+    updateCursorPosition();
+  });
+}
+
 function applyWordWrap(enabled, persist = true) {
   elements.wordWrap.checked = enabled;
   elements.editor.wrap = enabled ? "soft" : "off";
@@ -450,6 +512,8 @@ elements.editor.addEventListener("input", () => {
 ["click", "keyup", "select"].forEach((eventName) => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
+
+elements.editor.addEventListener("keydown", ensureShiftArrowSelection);
 
 document.addEventListener("selectionchange", () => {
   if (document.activeElement === elements.editor) updateCursorPosition();
