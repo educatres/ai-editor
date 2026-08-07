@@ -366,8 +366,72 @@ function findHorizontalToken(text, cursor, direction) {
   return offset < text.length ? getTokenRangeAt(text, offset) : null;
 }
 
+function getVisualLineArrowTarget(text, offset, key) {
+  if (!elements.wordWrap.checked || !window.getSelection()?.modify) {
+    return getArrowSelectionTarget(text, offset, key);
+  }
+
+  const editorStyle = window.getComputedStyle(elements.editor);
+  const mirror = document.createElement("div");
+  mirror.setAttribute("aria-hidden", "true");
+  Object.assign(mirror.style, {
+    position: "fixed",
+    left: "-100000px",
+    top: "0",
+    width: `${elements.editor.clientWidth}px`,
+    height: "auto",
+    minHeight: "0",
+    boxSizing: editorStyle.boxSizing,
+    padding: editorStyle.padding,
+    border: editorStyle.border,
+    font: editorStyle.font,
+    letterSpacing: editorStyle.letterSpacing,
+    lineHeight: editorStyle.lineHeight,
+    textAlign: editorStyle.textAlign,
+    textIndent: editorStyle.textIndent,
+    textTransform: editorStyle.textTransform,
+    wordSpacing: editorStyle.wordSpacing,
+    tabSize: editorStyle.tabSize,
+    whiteSpace: "pre-wrap",
+    overflowWrap: "break-word",
+    wordBreak: editorStyle.wordBreak,
+    direction: editorStyle.direction,
+    opacity: "0",
+    pointerEvents: "none",
+  });
+
+  const textNode = document.createTextNode(text || "\u200b");
+  mirror.appendChild(textNode);
+  document.body.appendChild(mirror);
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  const safeOffset = Math.min(Math.max(0, offset), text.length);
+  let target = safeOffset;
+
+  try {
+    range.setStart(textNode, safeOffset);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    selection.modify("move", key === "ArrowUp" ? "backward" : "forward", "line");
+
+    if (selection.focusNode && mirror.contains(selection.focusNode)) {
+      const offsetRange = document.createRange();
+      offsetRange.selectNodeContents(mirror);
+      offsetRange.setEnd(selection.focusNode, selection.focusOffset);
+      target = offsetRange.toString().length;
+    }
+  } finally {
+    selection.removeAllRanges();
+    mirror.remove();
+  }
+
+  return Math.min(Math.max(0, target), text.length);
+}
+
 function findVerticalToken(text, source, key) {
-  const target = getArrowSelectionTarget(text, source, key);
+  const target = getVisualLineArrowTarget(text, source, key);
   if (target === source) return null;
 
   const lineStart = target === 0 ? 0 : text.lastIndexOf("\n", target - 1) + 1;
@@ -375,24 +439,28 @@ function findVerticalToken(text, source, key) {
   const lineEnd = newlineIndex === -1 ? text.length : newlineIndex;
 
   if (target < lineEnd && !isTokenSeparator(text, target)) {
-    return getTokenRangeAt(text, target, lineStart, lineEnd);
+    return { ...getTokenRangeAt(text, target, lineStart, lineEnd), navigationOffset: target };
   }
 
   let offset = Math.min(target, lineEnd);
   while (offset < lineEnd && isTokenSeparator(text, offset)) {
     offset = getNextCharacterEnd(text, offset);
   }
-  if (offset < lineEnd) return getTokenRangeAt(text, offset, lineStart, lineEnd);
+  if (offset < lineEnd) {
+    return { ...getTokenRangeAt(text, offset, lineStart, lineEnd), navigationOffset: target };
+  }
 
   offset = Math.min(target, lineEnd);
   while (offset > lineStart) {
     offset = getPreviousCharacterStart(text, offset);
     if (!isTokenSeparator(text, offset)) {
-      return getTokenRangeAt(text, offset, lineStart, lineEnd);
+      return { ...getTokenRangeAt(text, offset, lineStart, lineEnd), navigationOffset: target };
     }
   }
   return null;
 }
+
+let lastControlNavigation = null;
 
 function getTokenSelection(key) {
   const text = elements.editor.value;
@@ -400,21 +468,35 @@ function getTokenSelection(key) {
 
   const start = elements.editor.selectionStart;
   const end = elements.editor.selectionEnd;
+  const continuesPreviousNavigation = lastControlNavigation
+    && lastControlNavigation.start === start
+    && lastControlNavigation.end === end;
   let range;
 
   if (key === "ArrowLeft") range = findHorizontalToken(text, start, -1);
   else if (key === "ArrowRight") range = findHorizontalToken(text, end, 1);
-  else range = findVerticalToken(text, start, key);
+  else {
+    const source = continuesPreviousNavigation ? lastControlNavigation.offset : start;
+    range = findVerticalToken(text, source, key);
+  }
 
   if (!range) return null;
   return {
     ...range,
     direction: key === "ArrowLeft" || key === "ArrowUp" ? "backward" : "forward",
+    navigationOffset: range.navigationOffset ?? range.start,
   };
 }
 
 function selectTokenWithArrow(key) {
-  applySelection(getTokenSelection(key));
+  const selection = getTokenSelection(key);
+  if (!selection) return;
+  applySelection(selection);
+  lastControlNavigation = {
+    start: selection.start,
+    end: selection.end,
+    offset: selection.navigationOffset,
+  };
 }
 
 const handledControlArrowKeys = new Set();
