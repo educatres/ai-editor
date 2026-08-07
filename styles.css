@@ -45,6 +45,16 @@ button { cursor: pointer; }
   width: max-content;
 }
 
+.cursor-position {
+  min-width: 42px;
+  align-self: center;
+  color: var(--muted);
+  text-align: right;
+  font: 12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .toolbar-check,
 .prompt-replace-option {
   display: flex;

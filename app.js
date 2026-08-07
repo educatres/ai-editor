@@ -48,6 +48,7 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
+  cursorPosition: document.querySelector("#cursorPosition"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
   copyBtn: document.querySelector("#copyBtn"),
@@ -186,6 +187,15 @@ function applyFontSize(value, persist = true) {
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
+function updateCursorPosition() {
+  const textBeforeCursor = elements.editor.value.slice(0, elements.editor.selectionStart);
+  const lines = textBeforeCursor.split("\n");
+  const line = lines.length;
+  const character = Array.from(lines.at(-1) ?? "").length + 1;
+  elements.cursorPosition.value = `${line}:${character}`;
+  elements.cursorPosition.textContent = `${line}:${character}`;
+}
+
 function applyWordWrap(enabled, persist = true) {
   elements.wordWrap.checked = enabled;
   elements.editor.wrap = enabled ? "soft" : "off";
@@ -224,6 +234,7 @@ function loadState() {
   applyPolishMode(POLISH_MODES.has(storedPolishMode) ? storedPolishMode : migratedPolishMode, false);
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
+  updateCursorPosition();
 }
 
 function saveSettings() {
@@ -296,6 +307,7 @@ async function runPolish() {
       const result = await polishText(originalText, settings);
       const output = renderFullPolishedDocument(originalText, result);
       elements.editor.value = output;
+      updateCursorPosition();
       saveValue(STORAGE_KEYS.editor, output);
       return;
     }
@@ -336,6 +348,7 @@ async function runPolish() {
 
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
+    updateCursorPosition();
     saveValue(STORAGE_KEYS.editor, output);
   } catch (error) {
     reportError(error.message || "潤飾失敗");
@@ -413,6 +426,7 @@ function clearRecords() {
   providerConfigs = {};
   activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
+  updateCursorPosition();
   elements.searchInput.value = "";
   elements.searchForm.hidden = true;
   elements.replacePrompt.checked = false;
@@ -426,10 +440,19 @@ function clearRecords() {
 
 let saveTimer;
 elements.editor.addEventListener("input", () => {
+  updateCursorPosition();
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveValue(STORAGE_KEYS.editor, elements.editor.value);
   }, 250);
+});
+
+["click", "keyup", "select"].forEach((eventName) => {
+  elements.editor.addEventListener(eventName, updateCursorPosition);
+});
+
+document.addEventListener("selectionchange", () => {
+  if (document.activeElement === elements.editor) updateCursorPosition();
 });
 
 elements.searchInput.addEventListener("input", () => {
