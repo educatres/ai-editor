@@ -72,6 +72,8 @@ const elements = {
   zoomOutBtn: document.querySelector("#zoomOutBtn"),
   clearBtn: document.querySelector("#clearBtn"),
   modeBtn: document.querySelector("#modeBtn"),
+  undoBtn: document.querySelector("#undoBtn"),
+  redoBtn: document.querySelector("#redoBtn"),
   wordWrap: document.querySelector("#wordWrap"),
   storageUsage: document.querySelector("#storageUsage"),
   hideToolbarBtn: document.querySelector("#hideToolbarBtn"),
@@ -109,6 +111,7 @@ let editorHistoryCurrent = null;
 let pendingBeforeInputSnapshot = null;
 let lastHistoryInputType = "";
 let lastHistoryInputTime = 0;
+let editorHistoryBusy = false;
 
 function loadValue(key, fallback = "") {
   try {
@@ -808,6 +811,7 @@ function reportError(message) {
 }
 
 function setBusy(busy) {
+  editorHistoryBusy = busy;
   elements.polishBtn.disabled = busy;
   elements.editor.disabled = busy;
   elements.settingsBtn.disabled = busy;
@@ -815,6 +819,7 @@ function setBusy(busy) {
   elements.modeBtn.disabled = busy;
   elements.clearBtn.disabled = busy;
   elements.polishBtn.textContent = busy ? "潤飾中…" : "潤飾";
+  updateHistoryButtons();
 }
 
 async function polishText(content, settings) {
@@ -870,6 +875,11 @@ function resetEditorHistoryGrouping() {
   lastHistoryInputTime = 0;
 }
 
+function updateHistoryButtons() {
+  elements.undoBtn.disabled = editorHistoryBusy || editorUndoStack.length === 0;
+  elements.redoBtn.disabled = editorHistoryBusy || editorRedoStack.length === 0;
+}
+
 function pushHistorySnapshot(stack, snapshot) {
   if (!snapshot) return;
   const previous = stack.at(-1);
@@ -883,12 +893,14 @@ function resetEditorHistory() {
   editorRedoStack = [];
   editorHistoryCurrent = captureEditorSnapshot();
   resetEditorHistoryGrouping();
+  updateHistoryButtons();
 }
 
 function recordProgrammaticEditorChange() {
   pushHistorySnapshot(editorUndoStack, captureEditorSnapshot());
   editorRedoStack = [];
   resetEditorHistoryGrouping();
+  updateHistoryButtons();
 }
 
 function restoreEditorViewport(viewport) {
@@ -936,6 +948,7 @@ function undoEditorChange() {
   if (!snapshot) return;
   pushHistorySnapshot(editorRedoStack, captureEditorSnapshot());
   applyEditorHistorySnapshot(snapshot);
+  updateHistoryButtons();
 }
 
 function redoEditorChange() {
@@ -943,6 +956,7 @@ function redoEditorChange() {
   if (!snapshot) return;
   pushHistorySnapshot(editorUndoStack, captureEditorSnapshot());
   applyEditorHistorySnapshot(snapshot);
+  updateHistoryButtons();
 }
 
 function handleEditorHistoryShortcut(event) {
@@ -1145,6 +1159,7 @@ elements.editor.addEventListener("input", (event) => {
   pendingBeforeInputSnapshot = null;
   lastHistoryInputType = inputType;
   lastHistoryInputTime = inputTime;
+  updateHistoryButtons();
 
   updateActiveLineFromCursor();
   scheduleLineNumberRender();
@@ -1212,6 +1227,8 @@ elements.modeBtn.addEventListener("click", () => {
   elements.modeDialog.showModal();
 });
 elements.polishBtn.addEventListener("click", runPolish);
+elements.undoBtn.addEventListener("click", undoEditorChange);
+elements.redoBtn.addEventListener("click", redoEditorChange);
 elements.copyBtn.addEventListener("click", copyEditor);
 elements.refreshBtn.addEventListener("click", () => window.location.reload());
 elements.downloadBtn.addEventListener("click", downloadEditor);
