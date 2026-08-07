@@ -120,7 +120,7 @@ button.danger { color: var(--danger); }
   background: #f7f7f7;
   color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
-  font-size: max(8px, calc(var(--editor-font-size) - 4px));
+  font-size: var(--editor-font-size);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   user-select: none;
