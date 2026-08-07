@@ -29,6 +29,7 @@ const STORAGE_KEYS = {
   fullPolish: "cguAiEditor.fullPolish",
   polishMode: "cguAiEditor.polishMode",
   wordWrap: "cguAiEditor.wordWrap",
+  toolbarHidden: "cguAiEditor.toolbarHidden",
 };
 
 const POLISH_MODES = new Set(["full", "marked", "context"]);
@@ -48,6 +49,8 @@ const DEFAULTS = {
 };
 
 const elements = {
+  app: document.querySelector(".app"),
+  toolbar: document.querySelector(".toolbar"),
   editor: document.querySelector("#editor"),
   lineNumbers: document.querySelector("#lineNumbers"),
   lineNumberContent: document.querySelector("#lineNumberContent"),
@@ -62,6 +65,8 @@ const elements = {
   modeBtn: document.querySelector("#modeBtn"),
   wordWrap: document.querySelector("#wordWrap"),
   storageUsage: document.querySelector("#storageUsage"),
+  hideToolbarBtn: document.querySelector("#hideToolbarBtn"),
+  showToolbarBtn: document.querySelector("#showToolbarBtn"),
   modeDialog: document.querySelector("#modeDialog"),
   settingsDialog: document.querySelector("#settingsDialog"),
   searchForm: document.querySelector("#searchForm"),
@@ -163,6 +168,14 @@ function syncVisualViewport() {
     "--visual-viewport-width",
     `${viewport?.width ?? window.innerWidth}px`,
   );
+}
+
+function applyToolbarHidden(hidden, persist = true) {
+  elements.toolbar.hidden = hidden;
+  elements.showToolbarBtn.hidden = !hidden;
+  elements.app.classList.toggle("toolbar-hidden", hidden);
+  scheduleLineNumberRender();
+  if (persist) saveValue(STORAGE_KEYS.toolbarHidden, String(hidden));
 }
 
 function loadProviderConfigs() {
@@ -770,6 +783,7 @@ function loadState() {
   const migratedPolishMode = loadValue(STORAGE_KEYS.fullPolish, "false") === "true" ? "full" : DEFAULTS.polishMode;
   applyPolishMode(POLISH_MODES.has(storedPolishMode) ? storedPolishMode : migratedPolishMode, false);
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
+  applyToolbarHidden(loadValue(STORAGE_KEYS.toolbarHidden, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
   updateActiveLineFromCursor();
   updateLocalStorageUsage();
@@ -972,6 +986,7 @@ function clearRecords() {
   elements.replacePrompt.checked = false;
   applyPolishMode(DEFAULTS.polishMode, false);
   applyWordWrap(false, false);
+  applyToolbarHidden(false, false);
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   elements.contextSystemPrompt.value = DEFAULTS.contextSystemPrompt;
   renderProvider(DEFAULTS.provider);
@@ -1050,6 +1065,14 @@ elements.downloadBtn.addEventListener("click", downloadEditor);
 elements.zoomInBtn.addEventListener("click", () => changeFontSize(DEFAULTS.fontSizeStep));
 elements.zoomOutBtn.addEventListener("click", () => changeFontSize(-DEFAULTS.fontSizeStep));
 elements.clearBtn.addEventListener("click", clearRecords);
+elements.hideToolbarBtn.addEventListener("click", () => {
+  applyToolbarHidden(true);
+  elements.showToolbarBtn.focus({ preventScroll: true });
+});
+elements.showToolbarBtn.addEventListener("click", () => {
+  applyToolbarHidden(false);
+  elements.hideToolbarBtn.focus({ preventScroll: true });
+});
 
 elements.searchForm.addEventListener("submit", (event) => {
   event.preventDefault();
