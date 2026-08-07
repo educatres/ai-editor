@@ -9,11 +9,12 @@
 - ChatGPT、Gemini、Claude 各提供五種近期模型
 - 各供應商分別保存 API Key、Endpoint 與模型
 - 支援 OpenAI Responses、Gemini generateContent 與 Claude Messages API
-- 自訂 System prompt
+- 「模式」視窗整合自訂 System prompt、範本與取代／追加設定
 - System prompt 提供「通用」、「Codex 開發」與「逐段潤飾模式」範例，可選擇取代原內容，或以 `===以下是新增的system prompt===` 分隔後追加
 - 多組 `{{ }}` 依序潤飾
 - 「模式」提供全文潤飾、只潤飾 `{{ }}`、只潤飾 `{{ }}` 但含上下文三種選擇
 - 含上下文模式會將全文提供給 AI 理解，但程式只套用各組 `{{ }}` 的潤飾結果，並自動附加專用 System prompt
+- 含上下文模式的專用 System prompt 可自行編輯，也可一鍵恢復預設內容
 - 支援 `\{`、`\}` 兩種大括號跳脫，完成後只移除這兩種反斜線
 - 可持續開啟上方搜尋列，搜尋上一個／下一個字串並在編輯器反白
 - 編輯器字體放大、縮小

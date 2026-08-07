@@ -1,4 +1,5 @@
 import {
+  CONTEXT_MODE_SYSTEM_PROMPT,
   PROVIDERS,
   appendContextModeSystemPrompt,
   buildContextPolishInput,
@@ -10,7 +11,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=8";
+} from "./core.js?v=9";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
   endpoint: "cguAiEditor.endpoint",
   model: "cguAiEditor.model",
   systemPrompt: "cguAiEditor.systemPrompt",
+  contextSystemPrompt: "cguAiEditor.contextSystemPrompt",
   searchTerm: "cguAiEditor.searchTerm",
   fontSize: "cguAiEditor.fontSize",
   replacePrompt: "cguAiEditor.replacePrompt",
@@ -41,13 +43,13 @@ const DEFAULTS = {
   serviceTier: "default",
   polishMode: "marked",
   systemPrompt: PROMPT_PRESETS.general.content,
+  contextSystemPrompt: CONTEXT_MODE_SYSTEM_PROMPT,
 };
 
 const elements = {
   editor: document.querySelector("#editor"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
-  promptBtn: document.querySelector("#promptBtn"),
   copyBtn: document.querySelector("#copyBtn"),
   searchBtn: document.querySelector("#searchBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
@@ -58,11 +60,9 @@ const elements = {
   wordWrap: document.querySelector("#wordWrap"),
   modeDialog: document.querySelector("#modeDialog"),
   settingsDialog: document.querySelector("#settingsDialog"),
-  promptDialog: document.querySelector("#promptDialog"),
   searchForm: document.querySelector("#searchForm"),
   modeForm: document.querySelector("#modeForm"),
   settingsForm: document.querySelector("#settingsForm"),
-  promptForm: document.querySelector("#promptForm"),
   searchInput: document.querySelector("#searchInput"),
   searchPrevBtn: document.querySelector("#searchPrevBtn"),
   searchCloseBtn: document.querySelector("#searchCloseBtn"),
@@ -72,7 +72,9 @@ const elements = {
   model: document.querySelector("#model"),
   providerHint: document.querySelector("#providerHint"),
   systemPrompt: document.querySelector("#systemPrompt"),
+  contextSystemPrompt: document.querySelector("#contextSystemPrompt"),
   replacePrompt: document.querySelector("#replacePrompt"),
+  applyDefaultContextPromptBtn: document.querySelector("#applyDefaultContextPromptBtn"),
   toggleKeyBtn: document.querySelector("#toggleKeyBtn"),
   appendGeneralPromptBtn: document.querySelector("#appendGeneralPromptBtn"),
   appendCodexPromptBtn: document.querySelector("#appendCodexPromptBtn"),
@@ -166,6 +168,7 @@ function getSettings() {
     endpoint: (elements.endpoint.value.trim() || getProvider(activeProvider).endpoint).replace(/\/+$/, ""),
     model: elements.model.value,
     systemPrompt: elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt,
+    contextSystemPrompt: elements.contextSystemPrompt.value.trim() || DEFAULTS.contextSystemPrompt,
     reasoningEffort: DEFAULTS.reasoningEffort,
     serviceTier: DEFAULTS.serviceTier,
   };
@@ -200,14 +203,22 @@ function applyPolishMode(mode, persist = true) {
   if (persist) saveValue(STORAGE_KEYS.polishMode, activePolishMode);
 }
 
+function loadModePromptFields() {
+  elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
+  elements.contextSystemPrompt.value = loadValue(
+    STORAGE_KEYS.contextSystemPrompt,
+    DEFAULTS.contextSystemPrompt,
+  );
+  elements.replacePrompt.checked = loadValue(STORAGE_KEYS.replacePrompt, "false") === "true";
+}
+
 function loadState() {
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
   loadProviderConfigs();
   const storedProvider = loadValue(STORAGE_KEYS.provider, DEFAULTS.provider);
   renderProvider(PROVIDERS[storedProvider] ? storedProvider : DEFAULTS.provider);
-  elements.systemPrompt.value = loadValue(STORAGE_KEYS.systemPrompt, DEFAULTS.systemPrompt);
+  loadModePromptFields();
   elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
-  elements.replacePrompt.checked = loadValue(STORAGE_KEYS.replacePrompt, "false") === "true";
   const storedPolishMode = loadValue(STORAGE_KEYS.polishMode, "");
   const migratedPolishMode = loadValue(STORAGE_KEYS.fullPolish, "false") === "true" ? "full" : DEFAULTS.polishMode;
   applyPolishMode(POLISH_MODES.has(storedPolishMode) ? storedPolishMode : migratedPolishMode, false);
@@ -221,6 +232,7 @@ function saveSettings() {
   saveValue(STORAGE_KEYS.provider, activeProvider);
   saveValue(STORAGE_KEYS.providerConfigs, JSON.stringify(providerConfigs));
   saveValue(STORAGE_KEYS.systemPrompt, settings.systemPrompt);
+  saveValue(STORAGE_KEYS.contextSystemPrompt, settings.contextSystemPrompt);
 }
 
 function reportError(message) {
@@ -231,7 +243,6 @@ function setBusy(busy) {
   elements.polishBtn.disabled = busy;
   elements.editor.disabled = busy;
   elements.settingsBtn.disabled = busy;
-  elements.promptBtn.disabled = busy;
   elements.searchBtn.disabled = busy;
   elements.modeBtn.disabled = busy;
   elements.clearBtn.disabled = busy;
@@ -305,7 +316,13 @@ async function runPolish() {
 
     const results = new Map();
     const polishSettings = activePolishMode === "context"
-      ? { ...settings, systemPrompt: appendContextModeSystemPrompt(settings.systemPrompt) }
+      ? {
+        ...settings,
+        systemPrompt: appendContextModeSystemPrompt(
+          settings.systemPrompt,
+          settings.contextSystemPrompt,
+        ),
+      }
       : settings;
 
     for (let index = 0; index < nonEmptyBlocks.length; index += 1) {
@@ -402,6 +419,7 @@ function clearRecords() {
   applyPolishMode(DEFAULTS.polishMode, false);
   applyWordWrap(false, false);
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
+  elements.contextSystemPrompt.value = DEFAULTS.contextSystemPrompt;
   renderProvider(DEFAULTS.provider);
   applyFontSize(DEFAULTS.fontSize, false);
 }
@@ -428,8 +446,8 @@ elements.provider.addEventListener("change", () => {
   captureProviderConfig();
   renderProvider(elements.provider.value);
 });
-elements.promptBtn.addEventListener("click", () => elements.promptDialog.showModal());
 elements.modeBtn.addEventListener("click", () => {
+  loadModePromptFields();
   applyPolishMode(activePolishMode, false);
   elements.modeDialog.showModal();
 });
@@ -451,13 +469,15 @@ elements.searchCloseBtn.addEventListener("click", () => {
   elements.editor.focus();
 });
 
-elements.replacePrompt.addEventListener("change", () => {
-  saveValue(STORAGE_KEYS.replacePrompt, String(elements.replacePrompt.checked));
-});
-
 elements.modeForm.addEventListener("submit", () => {
   const selectedMode = new FormData(elements.modeForm).get("polishMode");
   applyPolishMode(String(selectedMode));
+  elements.systemPrompt.value = elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt;
+  elements.contextSystemPrompt.value = elements.contextSystemPrompt.value.trim()
+    || DEFAULTS.contextSystemPrompt;
+  saveValue(STORAGE_KEYS.systemPrompt, elements.systemPrompt.value);
+  saveValue(STORAGE_KEYS.contextSystemPrompt, elements.contextSystemPrompt.value);
+  saveValue(STORAGE_KEYS.replacePrompt, String(elements.replacePrompt.checked));
 });
 
 elements.wordWrap.addEventListener("change", () => {
@@ -466,10 +486,6 @@ elements.wordWrap.addEventListener("change", () => {
 
 elements.settingsForm.addEventListener("submit", () => {
   saveSettings();
-});
-
-elements.promptForm.addEventListener("submit", () => {
-  saveValue(STORAGE_KEYS.systemPrompt, elements.systemPrompt.value.trim() || DEFAULTS.systemPrompt);
 });
 
 elements.appendGeneralPromptBtn.addEventListener("click", () => {
@@ -482,6 +498,15 @@ elements.appendCodexPromptBtn.addEventListener("click", () => {
 
 elements.appendCodexSectionPromptBtn.addEventListener("click", () => {
   appendPromptPreset(PROMPT_PRESETS.codexSection);
+});
+
+elements.applyDefaultContextPromptBtn.addEventListener("click", () => {
+  elements.contextSystemPrompt.value = DEFAULTS.contextSystemPrompt;
+  elements.contextSystemPrompt.focus();
+});
+
+elements.modeDialog.addEventListener("close", () => {
+  loadModePromptFields();
 });
 
 elements.toggleKeyBtn.addEventListener("click", () => {

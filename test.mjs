@@ -173,6 +173,14 @@ assert.equal(
   appendContextModeSystemPrompt("原本的 System prompt"),
   `原本的 System prompt\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${CONTEXT_MODE_SYSTEM_PROMPT}`,
 );
+assert.equal(
+  appendContextModeSystemPrompt("原本的 System prompt", "自訂含上下文規則"),
+  "原本的 System prompt\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n自訂含上下文規則",
+);
+assert.equal(
+  appendContextModeSystemPrompt("原本的 System prompt", "   "),
+  `原本的 System prompt\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${CONTEXT_MODE_SYSTEM_PROMPT}`,
+);
 
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 0, 1), { start: 0, end: 5 });
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 5, 1), { start: 11, end: 16 });

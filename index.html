@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>AI Editor</title>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <main class="app">
@@ -14,8 +14,7 @@
         <button id="polishBtn" type="button" class="primary">潤飾</button>
         <button id="modeBtn" type="button">模式</button>
         <button id="copyBtn" type="button">複製</button>
-        <button id="searchBtn" type="button">Search</button>
-        <button id="promptBtn" type="button">System prompt</button>
+        <button id="searchBtn" type="button">搜尋</button>
         <button id="downloadBtn" type="button">下載</button>
         <button id="zoomInBtn" type="button">放大</button>
         <button id="zoomOutBtn" type="button">縮小</button>
@@ -79,7 +78,38 @@
         </label>
       </fieldset>
 
-      <p class="hint">含上下文模式會自動附加專用 System prompt，且不會修改你保存的 System prompt。</p>
+      <section class="mode-prompt-section">
+        <strong>System prompt</strong>
+        <div class="prompt-presets">
+          <span>範本</span>
+          <label class="prompt-replace-option">
+            <input id="replacePrompt" type="checkbox">
+            取代原本的 prompt（未勾選時追加在後面）
+          </label>
+          <div class="preset-actions">
+            <button id="appendGeneralPromptBtn" type="button">通用</button>
+            <button id="appendCodexPromptBtn" type="button">Codex 開發</button>
+            <button id="appendCodexSectionPromptBtn" type="button">逐段潤飾模式</button>
+          </div>
+        </div>
+
+        <label>
+          提示詞
+          <textarea id="systemPrompt" rows="10"></textarea>
+        </label>
+      </section>
+
+      <section class="mode-prompt-section">
+        <div class="section-head">
+          <strong>含上下文模式專用 System prompt</strong>
+          <button id="applyDefaultContextPromptBtn" type="button">套用預設內容</button>
+        </div>
+        <label>
+          專用提示詞
+          <textarea id="contextSystemPrompt" rows="8"></textarea>
+        </label>
+        <p class="hint">只在「只潤飾 {{ }} 但含上下文」模式呼叫 API 時附加，不會改寫上方的 System prompt。</p>
+      </section>
 
       <div class="dialog-actions">
         <button type="button" data-close="modeDialog">取消</button>
@@ -139,7 +169,7 @@
           <li>局部潤飾時，以 <code>{{ 要潤飾的文字 }}</code> 標記內容，再按「潤飾」。</li>
           <li>若大括號只作為一般文字，局部潤飾時可使用 <code>\{</code> 與 <code>\}</code>。</li>
           <li>Search 可持續搜尋上一個或下一個結果；按「關閉」才會隱藏搜尋列。</li>
-          <li>System prompt 可選擇取代原內容，或以分隔線追加範本。</li>
+          <li>System prompt 已整合在「模式」視窗，可選擇取代原內容，或以分隔線追加範本。</li>
           <li>「換行」會依網頁寬度自動換行；複製與下載不會改變原始文字。</li>
         </ol>
         <p>文章、API 與各項設定會保存在本瀏覽器的 LocalStorage；按「清除記錄」可全部刪除。</p>
@@ -147,38 +177,6 @@
     </form>
   </dialog>
 
-  <dialog id="promptDialog">
-    <form method="dialog" class="dialog-form" id="promptForm">
-      <div class="dialog-head">
-        <strong>System prompt</strong>
-        <button type="button" class="icon-btn" data-close="promptDialog" aria-label="關閉">×</button>
-      </div>
-
-      <div class="prompt-presets">
-        <span>範本</span>
-        <label class="prompt-replace-option">
-          <input id="replacePrompt" type="checkbox">
-          取代原本的 prompt（未勾選時追加在後面）
-        </label>
-        <div class="preset-actions">
-          <button id="appendGeneralPromptBtn" type="button">通用</button>
-          <button id="appendCodexPromptBtn" type="button">Codex 開發</button>
-          <button id="appendCodexSectionPromptBtn" type="button">逐段潤飾模式</button>
-        </div>
-      </div>
-
-      <label>
-        提示詞
-        <textarea id="systemPrompt" rows="14"></textarea>
-      </label>
-
-      <div class="dialog-actions">
-        <button type="button" data-close="promptDialog">取消</button>
-        <button type="submit" class="primary">儲存</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script type="module" src="app.js?v=11"></script>
+  <script type="module" src="app.js?v=12"></script>
 </body>
 </html>

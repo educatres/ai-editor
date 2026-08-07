@@ -44,9 +44,10 @@ export const CONTEXT_MODE_SYSTEM_PROMPT = `你目前正在執行「只潤飾 {{ 
 只輸出兩個目標標記之間文字的潤飾結果，不得輸出目標標記、{{ }}、完整文章、標題、說明、引號或 Markdown 程式碼框。
 保留目標文字的原意、專有名詞、數字、格式與語氣層級；\\{ 與 \\} 應視為一般大括號。`;
 
-export function appendContextModeSystemPrompt(systemPrompt) {
+export function appendContextModeSystemPrompt(systemPrompt, contextModePrompt = CONTEXT_MODE_SYSTEM_PROMPT) {
   const basePrompt = systemPrompt.trim();
-  return `${basePrompt}\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${CONTEXT_MODE_SYSTEM_PROMPT}`;
+  const modePrompt = contextModePrompt.trim() || CONTEXT_MODE_SYSTEM_PROMPT;
+  return `${basePrompt}\n\n===只潤飾 {{ }} 但含上下文：模式專用規則===\n${modePrompt}`;
 }
 
 export function buildContextPolishInput(originalText, block, targetIndex, targetCount) {
