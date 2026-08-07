@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   fontSize: "cguAiEditor.fontSize",
   replacePrompt: "cguAiEditor.replacePrompt",
   fullPolish: "cguAiEditor.fullPolish",
+  wordWrap: "cguAiEditor.wordWrap",
 };
 
 const DEFAULTS = {
@@ -49,6 +50,7 @@ const elements = {
   zoomOutBtn: document.querySelector("#zoomOutBtn"),
   clearBtn: document.querySelector("#clearBtn"),
   fullPolish: document.querySelector("#fullPolish"),
+  wordWrap: document.querySelector("#wordWrap"),
   settingsDialog: document.querySelector("#settingsDialog"),
   promptDialog: document.querySelector("#promptDialog"),
   searchForm: document.querySelector("#searchForm"),
@@ -184,6 +186,12 @@ function applyFontSize(value, persist = true) {
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
+function applyWordWrap(enabled, persist = true) {
+  elements.wordWrap.checked = enabled;
+  elements.editor.wrap = enabled ? "soft" : "off";
+  if (persist) saveValue(STORAGE_KEYS.wordWrap, String(enabled));
+}
+
 function loadState() {
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
   loadProviderConfigs();
@@ -193,6 +201,7 @@ function loadState() {
   elements.searchInput.value = loadValue(STORAGE_KEYS.searchTerm, "");
   elements.replacePrompt.checked = loadValue(STORAGE_KEYS.replacePrompt, "false") === "true";
   elements.fullPolish.checked = loadValue(STORAGE_KEYS.fullPolish, "false") === "true";
+  applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
   updateLineNumbers();
 }
@@ -379,6 +388,7 @@ function clearRecords() {
   elements.searchForm.hidden = true;
   elements.replacePrompt.checked = false;
   elements.fullPolish.checked = false;
+  applyWordWrap(false, false);
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   renderProvider(DEFAULTS.provider);
   applyFontSize(DEFAULTS.fontSize, false);
@@ -436,6 +446,10 @@ elements.replacePrompt.addEventListener("change", () => {
 
 elements.fullPolish.addEventListener("change", () => {
   saveValue(STORAGE_KEYS.fullPolish, String(elements.fullPolish.checked));
+});
+
+elements.wordWrap.addEventListener("change", () => {
+  applyWordWrap(elements.wordWrap.checked);
 });
 
 elements.settingsForm.addEventListener("submit", () => {
