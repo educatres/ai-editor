@@ -48,8 +48,6 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
-  caretGuideTop: document.querySelector("#caretGuideTop"),
-  caretGuideLeft: document.querySelector("#caretGuideLeft"),
   cursorPosition: document.querySelector("#cursorPosition"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
@@ -186,7 +184,6 @@ function applyFontSize(value, persist = true) {
   document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
   elements.zoomInBtn.disabled = editorFontSize >= DEFAULTS.maxFontSize;
   elements.zoomOutBtn.disabled = editorFontSize <= DEFAULTS.minFontSize;
-  scheduleCaretGuideUpdate();
   if (persist) saveValue(STORAGE_KEYS.fontSize, String(editorFontSize));
 }
 
@@ -197,7 +194,6 @@ function updateCursorPosition() {
   const character = Array.from(lines.at(-1) ?? "").length + 1;
   elements.cursorPosition.value = `${line}:${character}`;
   elements.cursorPosition.textContent = `${line}:${character}`;
-  scheduleCaretGuideUpdate();
 }
 
 function offsetAtCharacter(lineText, character) {
@@ -401,80 +397,6 @@ function createEditorMirror() {
   });
   document.body.appendChild(mirror);
   return mirror;
-}
-
-function getEditorOffsetPosition(offset) {
-  const text = elements.editor.value;
-  const safeOffset = Math.min(Math.max(0, offset), text.length);
-  const mirror = createEditorMirror();
-  const marker = document.createElement("span");
-  const character = Array.from(text.slice(safeOffset))[0];
-  const canWrapCharacter = character && character !== "\n";
-
-  marker.textContent = canWrapCharacter ? character : "\u200b";
-  mirror.append(
-    document.createTextNode(text.slice(0, safeOffset)),
-    marker,
-    document.createTextNode(text.slice(
-      safeOffset + (canWrapCharacter ? character.length : 0),
-    )),
-  );
-
-  const position = { left: marker.offsetLeft, top: marker.offsetTop };
-  mirror.remove();
-  return position;
-}
-
-let caretGuideFrame = null;
-
-function updateCaretGuides() {
-  caretGuideFrame = null;
-  const editor = elements.editor;
-  const shouldShow = document.activeElement === editor
-    && !editor.disabled
-    && editor.selectionStart === editor.selectionEnd;
-
-  if (!shouldShow) {
-    elements.caretGuideTop.classList.remove("is-visible");
-    elements.caretGuideLeft.classList.remove("is-visible");
-    return;
-  }
-
-  const editorStyle = window.getComputedStyle(editor);
-  const lineHeight = Number.parseFloat(editorStyle.lineHeight)
-    || Number.parseFloat(editorStyle.fontSize) * 1.65;
-  const position = getEditorOffsetPosition(editor.selectionStart);
-  const caretLeft = position.left - editor.scrollLeft;
-  const caretTop = position.top - editor.scrollTop;
-  const isInView = caretLeft >= 0
-    && caretLeft < editor.clientWidth
-    && caretTop + lineHeight > 0
-    && caretTop < editor.clientHeight;
-
-  if (!isInView) {
-    elements.caretGuideTop.classList.remove("is-visible");
-    elements.caretGuideLeft.classList.remove("is-visible");
-    return;
-  }
-
-  const shell = editor.parentElement;
-  const guideLeft = Math.min(
-    shell.clientWidth - 2,
-    Math.max(2, editor.offsetLeft + caretLeft - 1),
-  );
-  const guideTop = Math.min(
-    shell.clientHeight - 2,
-    Math.max(2, editor.offsetTop + caretTop + (lineHeight / 2) - 1),
-  );
-  elements.caretGuideTop.style.left = `${guideLeft}px`;
-  elements.caretGuideLeft.style.top = `${guideTop}px`;
-  elements.caretGuideTop.classList.add("is-visible");
-  elements.caretGuideLeft.classList.add("is-visible");
-}
-
-function scheduleCaretGuideUpdate() {
-  if (caretGuideFrame !== null) return;
-  caretGuideFrame = window.requestAnimationFrame(updateCaretGuides);
 }
 
 function getVisualLineArrowTarget(text, offset, key) {
@@ -701,7 +623,6 @@ function handleArrowSelection(event) {
 function applyWordWrap(enabled, persist = true) {
   elements.wordWrap.checked = enabled;
   elements.editor.wrap = enabled ? "soft" : "off";
-  scheduleCaretGuideUpdate();
   if (persist) saveValue(STORAGE_KEYS.wordWrap, String(enabled));
 }
 
@@ -953,12 +874,6 @@ elements.editor.addEventListener("input", () => {
 ["click", "keyup", "select"].forEach((eventName) => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
 });
-
-elements.editor.addEventListener("focus", scheduleCaretGuideUpdate);
-elements.editor.addEventListener("blur", scheduleCaretGuideUpdate);
-elements.editor.addEventListener("scroll", scheduleCaretGuideUpdate);
-window.addEventListener("resize", scheduleCaretGuideUpdate);
-window.visualViewport?.addEventListener("resize", scheduleCaretGuideUpdate);
 
 window.addEventListener("keydown", (event) => {
   if (isShiftKeyEvent(event)) physicalShiftPressed = true;

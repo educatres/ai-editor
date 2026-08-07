@@ -112,33 +112,9 @@ button.danger { color: var(--danger); }
 .editor-shell {
   grid-row: 3;
   position: relative;
-  padding: 2px 0 0 2px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-}
-
-.editor-shell::before,
-.editor-shell::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  background: var(--border);
-  pointer-events: none;
-}
-
-.editor-shell::before {
-  top: 0;
-  right: 0;
-  left: 2px;
-  height: 2px;
-}
-
-.editor-shell::after {
-  top: 2px;
-  bottom: 0;
-  left: 0;
-  width: 2px;
 }
 
 #editor {
@@ -157,20 +133,6 @@ button.danger { color: var(--danger); }
 }
 
 #editor:disabled { background: #fafafa; color: #444; }
-
-.caret-guide {
-  position: absolute;
-  z-index: 3;
-  display: none;
-  width: 2px;
-  height: 2px;
-  background: #111;
-  pointer-events: none;
-}
-
-.caret-guide.is-visible { display: block; }
-.caret-guide-top { top: 0; }
-.caret-guide-left { left: 0; }
 
  dialog {
   width: min(520px, calc(100vw - 20px));
