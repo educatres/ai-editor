@@ -322,45 +322,99 @@ function getPreviousCharacterStart(text, offset) {
   return offset - (Array.from(text.slice(0, offset)).at(-1)?.length ?? 1);
 }
 
-function getSingleCharacterSelection(key) {
+function getNextCharacterEnd(text, offset) {
+  if (offset >= text.length) return text.length;
+  return offset + (Array.from(text.slice(offset))[0]?.length ?? 1);
+}
+
+function isTokenSeparator(text, offset) {
+  const character = Array.from(text.slice(offset))[0];
+  return !character || /[\s\p{P}\p{S}]/u.test(character);
+}
+
+function getTokenRangeAt(text, offset, lowerBound = 0, upperBound = text.length) {
+  if (offset < lowerBound || offset >= upperBound || isTokenSeparator(text, offset)) return null;
+
+  let start = offset;
+  while (start > lowerBound) {
+    const previous = getPreviousCharacterStart(text, start);
+    if (isTokenSeparator(text, previous)) break;
+    start = previous;
+  }
+
+  let end = getNextCharacterEnd(text, offset);
+  while (end < upperBound && !isTokenSeparator(text, end)) {
+    end = getNextCharacterEnd(text, end);
+  }
+  return { start, end };
+}
+
+function findHorizontalToken(text, cursor, direction) {
+  let offset = cursor;
+
+  if (direction < 0) {
+    while (offset > 0) {
+      offset = getPreviousCharacterStart(text, offset);
+      if (!isTokenSeparator(text, offset)) return getTokenRangeAt(text, offset);
+    }
+    return null;
+  }
+
+  while (offset < text.length && isTokenSeparator(text, offset)) {
+    offset = getNextCharacterEnd(text, offset);
+  }
+  return offset < text.length ? getTokenRangeAt(text, offset) : null;
+}
+
+function findVerticalToken(text, source, key) {
+  const target = getArrowSelectionTarget(text, source, key);
+  if (target === source) return null;
+
+  const lineStart = target === 0 ? 0 : text.lastIndexOf("\n", target - 1) + 1;
+  const newlineIndex = text.indexOf("\n", lineStart);
+  const lineEnd = newlineIndex === -1 ? text.length : newlineIndex;
+
+  if (target < lineEnd && !isTokenSeparator(text, target)) {
+    return getTokenRangeAt(text, target, lineStart, lineEnd);
+  }
+
+  let offset = Math.min(target, lineEnd);
+  while (offset < lineEnd && isTokenSeparator(text, offset)) {
+    offset = getNextCharacterEnd(text, offset);
+  }
+  if (offset < lineEnd) return getTokenRangeAt(text, offset, lineStart, lineEnd);
+
+  offset = Math.min(target, lineEnd);
+  while (offset > lineStart) {
+    offset = getPreviousCharacterStart(text, offset);
+    if (!isTokenSeparator(text, offset)) {
+      return getTokenRangeAt(text, offset, lineStart, lineEnd);
+    }
+  }
+  return null;
+}
+
+function getTokenSelection(key) {
   const text = elements.editor.value;
   if (!text) return null;
 
   const start = elements.editor.selectionStart;
   const end = elements.editor.selectionEnd;
-  const hasSelection = elements.editor.selectionStart !== elements.editor.selectionEnd;
-  let target;
+  let range;
 
-  if (key === "ArrowLeft") {
-    if (start <= 0) return null;
-    target = getPreviousCharacterStart(text, start);
-    if (text[target] === "\n" && target > 0) target = getPreviousCharacterStart(text, target);
-  } else if (key === "ArrowRight") {
-    target = hasSelection ? end : start;
-    if (text[target] === "\n") target += 1;
-    if (target >= text.length) return null;
-  } else {
-    const source = start;
-    target = getArrowSelectionTarget(text, source, key);
-    if (target === source) return null;
+  if (key === "ArrowLeft") range = findHorizontalToken(text, start, -1);
+  else if (key === "ArrowRight") range = findHorizontalToken(text, end, 1);
+  else range = findVerticalToken(text, start, key);
 
-    const targetLineStart = target === 0 ? 0 : text.lastIndexOf("\n", target - 1) + 1;
-    if ((target >= text.length || text[target] === "\n") && target > targetLineStart) {
-      target = getPreviousCharacterStart(text, target);
-    }
-  }
-
-  const character = Array.from(text.slice(target))[0];
-  if (!character) return null;
+  if (!range) return null;
   return {
-    start: target,
-    end: target + character.length,
+    ...range,
     direction: key === "ArrowLeft" || key === "ArrowUp" ? "backward" : "forward",
   };
 }
 
-function selectSingleCharacterWithArrow(key) {
-  applySelection(getSingleCharacterSelection(key));
+function selectTokenWithArrow(key) {
+  applySelection(getTokenSelection(key));
 }
 
 const handledControlArrowKeys = new Set();
@@ -377,7 +431,7 @@ function handleArrowSelection(event) {
 
   if (hasControlModifier(event) && !event.shiftKey) {
     event.preventDefault();
-    selectSingleCharacterWithArrow(arrowKey);
+    selectTokenWithArrow(arrowKey);
     if (event.type === "keydown") handledControlArrowKeys.add(arrowId);
     return;
   }
