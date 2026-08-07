@@ -39,7 +39,6 @@ const DEFAULTS = {
 
 const elements = {
   editor: document.querySelector("#editor"),
-  lineNumbers: document.querySelector("#lineNumbers"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
   promptBtn: document.querySelector("#promptBtn"),
@@ -74,7 +73,6 @@ const elements = {
 let activeProvider = DEFAULTS.provider;
 let providerConfigs = {};
 let editorFontSize = DEFAULTS.fontSize;
-let renderedLineCount = 0;
 
 function loadValue(key, fallback = "") {
   try {
@@ -163,17 +161,6 @@ function getSettings() {
   };
 }
 
-function updateLineNumbers() {
-  const lineCount = elements.editor.value.split("\n").length;
-  if (lineCount === renderedLineCount) return;
-
-  const numbers = [];
-  for (let line = 1; line <= lineCount; line += 1) numbers.push(String(line));
-  elements.lineNumbers.textContent = numbers.join("\n");
-  renderedLineCount = lineCount;
-  elements.lineNumbers.scrollTop = elements.editor.scrollTop;
-}
-
 function applyFontSize(value, persist = true) {
   const numeric = Number(value);
   editorFontSize = Math.min(
@@ -203,7 +190,6 @@ function loadState() {
   elements.fullPolish.checked = loadValue(STORAGE_KEYS.fullPolish, "false") === "true";
   applyWordWrap(loadValue(STORAGE_KEYS.wordWrap, "false") === "true", false);
   applyFontSize(loadValue(STORAGE_KEYS.fontSize, String(DEFAULTS.fontSize)), false);
-  updateLineNumbers();
 }
 
 function saveSettings() {
@@ -276,7 +262,6 @@ async function runPolish() {
       const result = await polishText(originalText, settings);
       const output = renderFullPolishedDocument(originalText, result);
       elements.editor.value = output;
-      updateLineNumbers();
       saveValue(STORAGE_KEYS.editor, output);
       return;
     }
@@ -304,7 +289,6 @@ async function runPolish() {
 
     const output = renderPolishedDocument(originalText, blocks, results);
     elements.editor.value = output;
-    updateLineNumbers();
     saveValue(STORAGE_KEYS.editor, output);
   } catch (error) {
     reportError(error.message || "潤飾失敗");
@@ -382,8 +366,6 @@ function clearRecords() {
   providerConfigs = {};
   activeProvider = DEFAULTS.provider;
   elements.editor.value = "";
-  renderedLineCount = 0;
-  updateLineNumbers();
   elements.searchInput.value = "";
   elements.searchForm.hidden = true;
   elements.replacePrompt.checked = false;
@@ -396,15 +378,10 @@ function clearRecords() {
 
 let saveTimer;
 elements.editor.addEventListener("input", () => {
-  updateLineNumbers();
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     saveValue(STORAGE_KEYS.editor, elements.editor.value);
   }, 250);
-});
-
-elements.editor.addEventListener("scroll", () => {
-  elements.lineNumbers.scrollTop = elements.editor.scrollTop;
 });
 
 elements.searchInput.addEventListener("input", () => {

@@ -95,25 +95,7 @@ button.danger { color: var(--danger); }
   grid-row: 3;
   min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
   overflow: hidden;
-}
-
-.line-numbers {
-  min-width: 44px;
-  height: 100%;
-  overflow: hidden;
-  padding: 12px 8px;
-  border-right: 1px solid var(--border);
-  background: #fafafa;
-  color: var(--muted);
-  text-align: right;
-  white-space: pre;
-  user-select: none;
-  pointer-events: none;
-  font: var(--editor-font-size)/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
-  font-variant-numeric: tabular-nums;
 }
 
 #editor {
@@ -215,5 +197,4 @@ input, select, .dialog-form textarea {
 
 @media (max-width: 640px) {
   #editor { padding: 10px; }
-  .line-numbers { padding: 10px 7px; }
 }
