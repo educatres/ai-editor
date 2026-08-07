@@ -232,40 +232,103 @@ function getArrowSelectionTarget(text, offset, key) {
   return nextLineStart + offsetAtCharacter(nextLine, character);
 }
 
-function extendSelectionWithArrow(key) {
-  const start = elements.editor.selectionStart;
-  const end = elements.editor.selectionEnd;
-  const direction = elements.editor.selectionDirection;
+function getExtendedSelection(key, start, end, direction) {
   const focus = start === end || direction !== "backward" ? end : start;
   const anchor = start === end ? start : direction === "backward" ? end : start;
   const target = getArrowSelectionTarget(elements.editor.value, focus, key);
-  if (target === focus) return;
+  if (target === focus) return null;
 
-  elements.editor.setSelectionRange(
-    Math.min(anchor, target),
-    Math.max(anchor, target),
-    target < anchor ? "backward" : "forward",
-  );
+  return {
+    start: Math.min(anchor, target),
+    end: Math.max(anchor, target),
+    direction: target < anchor ? "backward" : "forward",
+  };
+}
+
+function applySelection(selection) {
+  if (!selection) return;
+  elements.editor.setSelectionRange(selection.start, selection.end, selection.direction);
   updateCursorPosition();
 }
 
+function extendSelectionWithArrow(key) {
+  applySelection(getExtendedSelection(
+    key,
+    elements.editor.selectionStart,
+    elements.editor.selectionEnd,
+    elements.editor.selectionDirection,
+  ));
+}
+
+const LEGACY_ARROW_KEYS = {
+  Left: "ArrowLeft",
+  Right: "ArrowRight",
+  Up: "ArrowUp",
+  Down: "ArrowDown",
+  37: "ArrowLeft",
+  38: "ArrowUp",
+  39: "ArrowRight",
+  40: "ArrowDown",
+};
+
+let physicalShiftPressed = false;
+
+function normalizeArrowKey(event) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+    return event.key;
+  }
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.code)) {
+    return event.code;
+  }
+  return LEGACY_ARROW_KEYS[event.key] || LEGACY_ARROW_KEYS[event.keyCode]
+    || LEGACY_ARROW_KEYS[event.which] || null;
+}
+
+function isShiftKeyEvent(event) {
+  return event.key === "Shift" || event.code === "ShiftLeft" || event.code === "ShiftRight"
+    || event.keyCode === 16 || event.which === 16;
+}
+
+function hasShiftModifier(event) {
+  return event.shiftKey || physicalShiftPressed || event.getModifierState?.("Shift") === true;
+}
+
 function handleArrowSelection(event) {
-  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+  const arrowKey = normalizeArrowKey(event);
+  if (!arrowKey) return;
 
   if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
     event.preventDefault();
-    extendSelectionWithArrow(event.key);
+    extendSelectionWithArrow(arrowKey);
     return;
   }
 
-  if (!event.shiftKey) return;
+  if (!hasShiftModifier(event)) return;
 
   const start = elements.editor.selectionStart;
   const end = elements.editor.selectionEnd;
+  const direction = elements.editor.selectionDirection;
+  const expectedSelection = getExtendedSelection(arrowKey, start, end, direction);
+  if (!expectedSelection) return;
+
+  if (!event.shiftKey && physicalShiftPressed) {
+    event.preventDefault();
+    applySelection(expectedSelection);
+    return;
+  }
+
   window.requestAnimationFrame(() => {
-    if (elements.editor.selectionStart === start && elements.editor.selectionEnd === end) {
-      extendSelectionWithArrow(event.key);
-    }
+    const currentStart = elements.editor.selectionStart;
+    const currentEnd = elements.editor.selectionEnd;
+    const matchesExpected = currentStart === expectedSelection.start
+      && currentEnd === expectedSelection.end;
+    if (matchesExpected) return;
+
+    const nativeChangedSelection = currentStart !== currentEnd
+      && (currentStart !== start || currentEnd !== end);
+    if (nativeChangedSelection) return;
+
+    applySelection(expectedSelection);
   });
 }
 
@@ -522,6 +585,18 @@ elements.editor.addEventListener("input", () => {
 
 ["click", "keyup", "select"].forEach((eventName) => {
   elements.editor.addEventListener(eventName, updateCursorPosition);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (isShiftKeyEvent(event)) physicalShiftPressed = true;
+}, true);
+
+document.addEventListener("keyup", (event) => {
+  if (isShiftKeyEvent(event)) physicalShiftPressed = false;
+}, true);
+
+window.addEventListener("blur", () => {
+  physicalShiftPressed = false;
 });
 
 elements.editor.addEventListener("keydown", handleArrowSelection);
