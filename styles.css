@@ -4,7 +4,14 @@
   --border: #d7d7d7;
   --muted: #666;
   --danger: #a32020;
+  --warning: #7a4a00;
   --primary: #111;
+  --theme-background: #fff;
+  --theme-foreground: #111;
+  --theme-subtle-background: #f7f7f7;
+  --theme-hover-background: #f5f5f5;
+  --theme-disabled-background: #fafafa;
+  --theme-disabled-foreground: #444;
   --editor-font-size: 16px;
   --editor-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
   --editor-line-height: 26.4px;
@@ -14,6 +21,81 @@
   --visual-viewport-width: 100vw;
 }
 
+:root[data-theme="soft"] {
+  color-scheme: light;
+  --theme-background: #F4F1E8;
+  --theme-foreground: #111111;
+  --theme-subtle-background: #ECE8DC;
+  --theme-hover-background: #E6E1D3;
+  --theme-disabled-background: #ECE8DC;
+  --theme-disabled-foreground: #111111;
+  --border: #111111;
+  --muted: #111111;
+  --primary: #111111;
+  --danger: #111111;
+  --warning: #111111;
+}
+
+:root[data-theme="retro-green"] {
+  color-scheme: dark;
+  --theme-background: #050805;
+  --theme-foreground: #39FF14;
+  --theme-subtle-background: #0A120A;
+  --theme-hover-background: #102010;
+  --theme-disabled-background: #080D08;
+  --theme-disabled-foreground: #39FF14;
+  --border: #39FF14;
+  --muted: #39FF14;
+  --primary: #39FF14;
+  --danger: #39FF14;
+  --warning: #39FF14;
+}
+
+:root[data-theme="retro-gray"] {
+  color-scheme: dark;
+  --theme-background: #070707;
+  --theme-foreground: #C8C8C8;
+  --theme-subtle-background: #101010;
+  --theme-hover-background: #181818;
+  --theme-disabled-background: #0C0C0C;
+  --theme-disabled-foreground: #C8C8C8;
+  --border: #C8C8C8;
+  --muted: #C8C8C8;
+  --primary: #C8C8C8;
+  --danger: #C8C8C8;
+  --warning: #C8C8C8;
+}
+
+:root[data-theme="retro-orange"] {
+  color-scheme: dark;
+  --theme-background: #090500;
+  --theme-foreground: #FF9000;
+  --theme-subtle-background: #140B00;
+  --theme-hover-background: #211200;
+  --theme-disabled-background: #100900;
+  --theme-disabled-foreground: #FF9000;
+  --border: #FF9000;
+  --muted: #FF9000;
+  --primary: #FF9000;
+  --danger: #FF9000;
+  --warning: #FF9000;
+}
+
+:root[data-theme="retro-yellow"] {
+  color-scheme: dark;
+  --theme-background: #080808;
+  --theme-foreground: #FFD84D;
+  --theme-subtle-background: #11110D;
+  --theme-hover-background: #1D1B10;
+  --theme-disabled-background: #0D0D0A;
+  --theme-disabled-foreground: #FFD84D;
+  --border: #FFD84D;
+  --muted: #FFD84D;
+  --primary: #FFD84D;
+  --danger: #FFD84D;
+  --warning: #FFD84D;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -21,8 +103,8 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #fff;
-  color: #111;
+  background: var(--theme-background);
+  color: var(--theme-foreground);
 }
 
 button, input, select, textarea { font: inherit; }
@@ -61,7 +143,7 @@ button { cursor: pointer; }
     7px
     calc(8px + env(safe-area-inset-left));
   border-bottom: 1px solid var(--border);
-  background: #fff;
+  background: var(--theme-background);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -99,6 +181,28 @@ button { cursor: pointer; }
   flex: 0 0 auto;
   width: max-content;
 }
+
+.theme-picker { position: relative; }
+
+.theme-menu {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  min-width: 112px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--theme-background);
+  box-shadow: 0 5px 18px rgb(0 0 0 / .25);
+}
+
+.theme-menu[hidden] { display: none; }
+.theme-menu button {
+  width: 100%;
+  border-color: transparent;
+  text-align: left;
+}
+.theme-menu button[aria-checked="true"] { border-color: var(--border); }
 
 .toolbar-check,
 .prompt-replace-option {
@@ -145,13 +249,17 @@ button {
   padding: 5px 9px;
   border: 1px solid var(--border);
   border-radius: 5px;
-  background: #fff;
-  color: #111;
+  background: var(--theme-background);
+  color: var(--theme-foreground);
   white-space: nowrap;
 }
-button:hover { background: #f5f5f5; }
+button:hover { background: var(--theme-hover-background); }
 button:disabled { cursor: wait; opacity: .55; }
-button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--theme-background);
+}
 button.danger { color: var(--danger); }
 
 .editor-shell {
@@ -171,7 +279,7 @@ button.danger { color: var(--danger); }
   height: 100%;
   overflow: hidden;
   border-right: 1px solid var(--border);
-  background: #f7f7f7;
+  background: var(--theme-subtle-background);
   color: var(--muted);
   font-family: var(--editor-font-family);
   font-size: var(--editor-font-size);
@@ -200,8 +308,8 @@ button.danger { color: var(--danger); }
 }
 
 .line-number.is-active {
-  background: #111;
-  color: #fff;
+  background: var(--theme-foreground);
+  color: var(--theme-background);
 }
 
 #editor {
@@ -214,13 +322,16 @@ button.danger { color: var(--danger); }
   border: 0;
   outline: 0;
   padding: 12px;
-  background: #fff;
-  color: #111;
+  background: var(--theme-background);
+  color: var(--theme-foreground);
   font: var(--editor-font-size)/1.65 var(--editor-font-family);
   tab-size: 2;
 }
 
-#editor:disabled { background: #fafafa; color: #444; }
+#editor:disabled {
+  background: var(--theme-disabled-background);
+  color: var(--theme-disabled-foreground);
+}
 
  dialog {
   width: min(520px, calc(100vw - 20px));
@@ -229,6 +340,8 @@ button.danger { color: var(--danger); }
   border: 1px solid var(--border);
   border-radius: 7px;
   box-shadow: 0 10px 35px rgb(0 0 0 / .18);
+  background: var(--theme-background);
+  color: var(--theme-foreground);
 }
 
 dialog::backdrop { background: rgb(0 0 0 / .25); }
@@ -267,8 +380,8 @@ input, select, .dialog-form textarea {
   border: 1px solid var(--border);
   border-radius: 5px;
   padding: 8px;
-  background: #fff;
-  color: #111;
+  background: var(--theme-background);
+  color: var(--theme-foreground);
 }
 
 .dialog-form textarea { resize: vertical; line-height: 1.5; }
@@ -296,7 +409,7 @@ input, select, .dialog-form textarea {
   cursor: pointer;
 }
 
-.mode-option:hover { background: #f5f5f5; }
+.mode-option:hover { background: var(--theme-hover-background); }
 .mode-option input {
   width: auto;
   margin: 3px 0 0;
@@ -342,12 +455,12 @@ input, select, .dialog-form textarea {
   line-height: 1.5;
   color: var(--muted);
 }
-.warning { color: #7a4a00; }
+.warning { color: var(--warning); }
 
 .usage-help {
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  color: #333;
+  color: var(--theme-foreground);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -362,7 +475,7 @@ input, select, .dialog-form textarea {
 .usage-help code {
   padding: 1px 3px;
   border-radius: 3px;
-  background: #f2f2f2;
+  background: var(--theme-subtle-background);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 

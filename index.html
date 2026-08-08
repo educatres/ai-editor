@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <main class="app">
@@ -34,6 +34,23 @@
         <button id="zoomInBtn" type="button" aria-label="放大" title="放大">+</button>
         <button id="zoomOutBtn" type="button" aria-label="縮小" title="縮小">-</button>
         <button id="settingsBtn" type="button">API</button>
+        <div class="theme-picker">
+          <button
+            id="themeBtn"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="themeMenu"
+          >主題</button>
+          <div id="themeMenu" class="theme-menu" role="menu" hidden>
+            <button type="button" role="menuitemradio" data-theme="default">預設</button>
+            <button type="button" role="menuitemradio" data-theme="soft">柔和</button>
+            <button type="button" role="menuitemradio" data-theme="retro-green">復古綠</button>
+            <button type="button" role="menuitemradio" data-theme="retro-gray">復古灰</button>
+            <button type="button" role="menuitemradio" data-theme="retro-orange">復古橘</button>
+            <button type="button" role="menuitemradio" data-theme="retro-yellow">復古黃</button>
+          </div>
+        </div>
         <label class="toolbar-check">
           <input id="wordWrap" type="checkbox">
           換行
@@ -214,6 +231,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=46"></script>
+  <script type="module" src="app.js?v=47"></script>
 </body>
 </html>

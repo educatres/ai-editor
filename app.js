@@ -31,9 +31,26 @@ const STORAGE_KEYS = {
   polishMode: "cguAiEditor.polishMode",
   wordWrap: "cguAiEditor.wordWrap",
   toolbarHidden: "cguAiEditor.toolbarHidden",
+  theme: "cguAiEditor.theme",
 };
 
 const POLISH_MODES = new Set(["full", "marked", "context"]);
+const THEMES = new Set([
+  "default",
+  "soft",
+  "retro-green",
+  "retro-gray",
+  "retro-orange",
+  "retro-yellow",
+]);
+const THEME_COLORS = {
+  default: "#ffffff",
+  soft: "#F4F1E8",
+  "retro-green": "#050805",
+  "retro-gray": "#070707",
+  "retro-orange": "#090500",
+  "retro-yellow": "#080808",
+};
 const LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
 const EDITOR_HISTORY_LIMIT = 100;
 const EDITOR_HISTORY_GROUP_WINDOW_MS = 750;
@@ -64,6 +81,9 @@ const elements = {
   lineNumberContent: document.querySelector("#lineNumberContent"),
   polishBtn: document.querySelector("#polishBtn"),
   settingsBtn: document.querySelector("#settingsBtn"),
+  themeBtn: document.querySelector("#themeBtn"),
+  themeMenu: document.querySelector("#themeMenu"),
+  themeColor: document.querySelector('meta[name="theme-color"]'),
   copyBtn: document.querySelector("#copyBtn"),
   searchBtn: document.querySelector("#searchBtn"),
   refreshBtn: document.querySelector("#refreshBtn"),
@@ -190,6 +210,7 @@ function syncVisualViewport() {
     "--visual-viewport-width",
     `${viewport?.width ?? window.innerWidth}px`,
   );
+  positionThemeMenu();
 }
 
 function applyToolbarHidden(hidden, persist = true) {
@@ -198,6 +219,59 @@ function applyToolbarHidden(hidden, persist = true) {
   elements.app.classList.toggle("toolbar-hidden", hidden);
   scheduleLineNumberRender();
   if (persist) saveValue(STORAGE_KEYS.toolbarHidden, String(hidden));
+}
+
+function positionThemeMenu() {
+  if (elements.themeMenu.hidden) return;
+
+  const buttonRect = elements.themeBtn.getBoundingClientRect();
+  const menuWidth = elements.themeMenu.offsetWidth;
+  const menuHeight = elements.themeMenu.offsetHeight;
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+  const viewportTop = window.visualViewport?.offsetTop ?? 0;
+  const gap = 4;
+  const edge = 6;
+  const left = Math.min(
+    Math.max(buttonRect.left, viewportLeft + edge),
+    viewportLeft + viewportWidth - menuWidth - edge,
+  );
+  const below = buttonRect.bottom + gap;
+  const top = below + menuHeight <= viewportTop + viewportHeight - edge
+    ? below
+    : Math.max(viewportTop + edge, buttonRect.top - menuHeight - gap);
+
+  elements.themeMenu.style.left = `${left}px`;
+  elements.themeMenu.style.top = `${top}px`;
+}
+
+function closeThemeMenu({ restoreFocus = false } = {}) {
+  elements.themeMenu.hidden = true;
+  elements.themeBtn.setAttribute("aria-expanded", "false");
+  if (restoreFocus) elements.themeBtn.focus({ preventScroll: true });
+}
+
+function openThemeMenu({ focusFirst = false } = {}) {
+  elements.themeMenu.hidden = false;
+  elements.themeBtn.setAttribute("aria-expanded", "true");
+  positionThemeMenu();
+  if (focusFirst) elements.themeMenu.querySelector("button")?.focus({ preventScroll: true });
+}
+
+function applyTheme(theme, persist = true) {
+  const selectedTheme = THEMES.has(theme) ? theme : "default";
+  if (selectedTheme === "default") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.dataset.theme = selectedTheme;
+  }
+
+  elements.themeMenu.querySelectorAll("[data-theme]").forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.theme === selectedTheme));
+  });
+  elements.themeColor.content = THEME_COLORS[selectedTheme];
+  if (persist) saveValue(STORAGE_KEYS.theme, selectedTheme);
 }
 
 function loadProviderConfigs() {
@@ -796,6 +870,7 @@ function loadModePromptFields() {
 }
 
 function loadState() {
+  applyTheme(loadValue(STORAGE_KEYS.theme, "default"), false);
   elements.editor.value = loadValue(STORAGE_KEYS.editor, "");
   loadProviderConfigs();
   const storedProvider = loadValue(STORAGE_KEYS.provider, DEFAULTS.provider);
@@ -1176,6 +1251,7 @@ function clearRecords() {
   applyPolishMode(DEFAULTS.polishMode, false);
   applyWordWrap(false, false);
   applyToolbarHidden(false, false);
+  applyTheme("default", false);
   elements.systemPrompt.value = DEFAULTS.systemPrompt;
   elements.contextSystemPrompt.value = DEFAULTS.contextSystemPrompt;
   renderProvider(DEFAULTS.provider);
@@ -1277,6 +1353,39 @@ elements.searchInput.addEventListener("input", () => {
 });
 
 elements.settingsBtn.addEventListener("click", () => elements.settingsDialog.showModal());
+elements.themeBtn.addEventListener("click", () => {
+  if (elements.themeMenu.hidden) openThemeMenu();
+  else closeThemeMenu();
+});
+elements.themeBtn.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowDown") return;
+  event.preventDefault();
+  openThemeMenu({ focusFirst: true });
+});
+elements.themeMenu.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-theme]");
+  if (!option) return;
+  applyTheme(option.dataset.theme);
+  closeThemeMenu({ restoreFocus: true });
+});
+elements.themeMenu.addEventListener("keydown", (event) => {
+  const options = [...elements.themeMenu.querySelectorAll("[data-theme]")];
+  const currentIndex = options.indexOf(document.activeElement);
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeThemeMenu({ restoreFocus: true });
+    return;
+  }
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  let nextIndex = event.key === "Home" ? 0 : options.length - 1;
+  if (event.key === "ArrowDown") nextIndex = (currentIndex + 1) % options.length;
+  if (event.key === "ArrowUp") nextIndex = (currentIndex - 1 + options.length) % options.length;
+  options[nextIndex].focus({ preventScroll: true });
+});
+document.addEventListener("pointerdown", (event) => {
+  if (!event.target.closest(".theme-picker")) closeThemeMenu();
+});
 elements.searchBtn.addEventListener("click", () => {
   elements.searchForm.hidden = false;
   elements.searchInput.focus();
