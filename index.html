@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="styles.css?v=28">
+  <link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
   <main class="app">
@@ -31,6 +31,7 @@
         <button id="redoBtn" type="button" title="重做（Ctrl + y / Alt + y）" disabled>Redo</button>
         <button id="copyBtn" type="button">複製</button>
         <button id="searchBtn" type="button">搜尋</button>
+        <button id="previewBtn" type="button">預覽</button>
         <button id="zoomInBtn" type="button" aria-label="放大" title="放大">+</button>
         <button id="zoomOutBtn" type="button" aria-label="縮小" title="縮小">-</button>
         <button id="settingsBtn" type="button">API</button>
@@ -220,6 +221,7 @@
           <li>局部潤飾時，每次只能用一組 <code>{{ 要潤飾的文字 }}</code> 標記內容；超過一組會停止並顯示警告。</li>
           <li>若大括號只作為一般文字，局部潤飾時可使用 <code>\{</code> 與 <code>\}</code>。</li>
           <li>Search 可持續搜尋上一個或下一個結果；按「關閉」才會隱藏搜尋列。</li>
+          <li>按「預覽」會在新分頁顯示全文，可切換每行 20、40、60 字或不換行，並調整預覽字級。</li>
           <li>System prompt 已整合在「模式」視窗，可選擇取代原內容，或以分隔線追加範本。</li>
           <li>「換行」會依網頁寬度自動換行；複製與下載不會改變原始文字。</li>
           <li>Android Chrome 可用「安裝應用程式／加到主畫面」安裝；iPhone 或 iPad Safari 可用「分享 → 加入主畫面」。</li>
@@ -235,6 +237,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="app.js?v=49"></script>
+  <script type="module" src="app.js?v=50"></script>
 </body>
 </html>

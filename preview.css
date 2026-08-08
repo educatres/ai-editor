@@ -1,0 +1,112 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+  --preview-font-size: 16px;
+  --border: #d7d7d7;
+  --muted: #666;
+  --background: #fff;
+  --subtle: #f7f7f7;
+  --foreground: #111;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.preview-toolbar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 50px;
+  padding: calc(8px + env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--border);
+  background: rgb(255 255 255 / .96);
+  backdrop-filter: blur(8px);
+}
+
+.preview-toolbar label,
+.font-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+select,
+button {
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+}
+
+button:disabled { opacity: .45; }
+
+.font-controls { margin-left: auto; }
+.font-controls output {
+  min-width: 42px;
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-scroller {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 14px max(10px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+}
+
+.preview-content {
+  display: table;
+  min-width: 100%;
+  font: var(--preview-font-size)/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-line {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  min-height: 1.7em;
+}
+
+.preview-line-number {
+  position: sticky;
+  left: 0;
+  min-width: calc(var(--line-number-digits, 1) * 1ch + 18px);
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+  background: var(--subtle);
+  color: var(--muted);
+  text-align: right;
+  user-select: none;
+}
+
+.preview-line-text {
+  min-width: 1ch;
+  padding-left: 12px;
+  white-space: pre;
+}
+
+@media (max-width: 520px) {
+  .preview-toolbar strong { width: 100%; }
+  .font-controls { margin-left: 0; }
+  .preview-scroller { padding-top: 10px; }
+}
+
+@media print {
+  .preview-toolbar { display: none; }
+  .preview-scroller { overflow: visible; padding: 0; }
+}

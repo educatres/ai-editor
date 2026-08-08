@@ -16,6 +16,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
+  wrapPreviewLines,
 } from "./core.js";
 import { PROMPT_PRESETS, PROMPT_SEPARATOR, mergePromptText } from "./prompt-presets.js";
 
@@ -198,6 +199,13 @@ assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 5, 1), { start: 11
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", 16, 1), { start: 0, end: 5 });
 assert.deepEqual(findSearchMatch("Alpha beta ALPHA", "alpha", -1, -1), { start: 11, end: 16 });
 assert.equal(findSearchMatch("Alpha", "missing", 0, 1), null);
+
+assert.deepEqual(wrapPreviewLines("12345", 2), ["12", "34", "5"]);
+assert.deepEqual(wrapPreviewLines("第一行\n\n第二行", 20), ["第一行", "", "第二行"]);
+assert.deepEqual(wrapPreviewLines("第一行\r\n第二行\r第三行", 20), ["第一行", "第二行", "第三行"]);
+assert.deepEqual(wrapPreviewLines("文字\n", 20), ["文字", ""]);
+assert.deepEqual(wrapPreviewLines("不換行\n第二行", null), ["不換行", "第二行"]);
+assert.deepEqual(wrapPreviewLines("A👨‍👩‍👧‍👦B", 2), ["A👨‍👩‍👧‍👦", "B"]);
 
 assert.equal(PROMPT_PRESETS.general.content.startsWith("你是繁體中文文字編輯助手。"), true);
 assert.equal(PROMPT_PRESETS.codex.content.includes("## 基本原則"), true);

@@ -12,7 +12,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=11";
+} from "./core.js?v=12";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -32,6 +32,8 @@ const STORAGE_KEYS = {
   wordWrap: "cguAiEditor.wordWrap",
   toolbarHidden: "cguAiEditor.toolbarHidden",
   theme: "cguAiEditor.theme",
+  previewWrap: "cguAiEditor.previewWrap",
+  previewFontSize: "cguAiEditor.previewFontSize",
 };
 
 const POLISH_MODES = new Set(["full", "marked", "context"]);
@@ -94,6 +96,7 @@ const elements = {
   themeColor: document.querySelector('meta[name="theme-color"]'),
   copyBtn: document.querySelector("#copyBtn"),
   searchBtn: document.querySelector("#searchBtn"),
+  previewBtn: document.querySelector("#previewBtn"),
   refreshBtn: document.querySelector("#refreshBtn"),
   downloadBtn: document.querySelector("#downloadBtn"),
   zoomInBtn: document.querySelector("#zoomInBtn"),
@@ -915,6 +918,7 @@ function setBusy(busy) {
   elements.editor.disabled = busy;
   elements.settingsBtn.disabled = busy;
   elements.searchBtn.disabled = busy;
+  elements.previewBtn.disabled = busy;
   elements.modeBtn.disabled = busy;
   elements.clearBtn.disabled = busy;
   elements.polishBtn.textContent = busy ? "潤飾中…" : "潤飾";
@@ -1244,6 +1248,19 @@ function downloadEditor() {
   URL.revokeObjectURL(url);
 }
 
+function openPreview() {
+  const content = elements.editor.value;
+  saveValue(STORAGE_KEYS.editor, content);
+  try {
+    sessionStorage.setItem("cguAiEditor.previewSnapshot", content);
+  } catch {
+    // preview.html can still read the current LocalStorage article.
+  }
+
+  const previewWindow = window.open("./preview.html", "_blank");
+  if (!previewWindow) reportError("瀏覽器阻擋了預覽分頁，請允許此網站開啟彈出式視窗後再試一次。");
+}
+
 function clearRecords() {
   const confirmed = window.confirm("確定清除文章、API 設定、搜尋字串、字體大小與 System prompt？");
   if (!confirmed) return;
@@ -1399,6 +1416,7 @@ elements.searchBtn.addEventListener("click", () => {
   elements.searchInput.focus();
   elements.searchInput.select();
 });
+elements.previewBtn.addEventListener("click", openPreview);
 elements.provider.addEventListener("change", () => {
   captureProviderConfig();
   renderProvider(elements.provider.value);

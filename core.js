@@ -100,6 +100,35 @@ export function findSearchMatch(text, query, startIndex = 0, direction = 1) {
   return index === -1 ? null : { start: index, end: index + query.length };
 }
 
+function splitGraphemes(text) {
+  if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+    const segmenter = new Intl.Segmenter("zh-Hant", { granularity: "grapheme" });
+    return Array.from(segmenter.segment(text), ({ segment }) => segment);
+  }
+  return Array.from(text);
+}
+
+export function wrapPreviewLines(text, width = null) {
+  const normalized = String(text).replace(/\r\n?/g, "\n");
+  const numericWidth = Number(width);
+  const shouldWrap = Number.isInteger(numericWidth) && numericWidth > 0;
+  const output = [];
+
+  normalized.split("\n").forEach((line) => {
+    if (!shouldWrap || line === "") {
+      output.push(line);
+      return;
+    }
+
+    const graphemes = splitGraphemes(line);
+    for (let index = 0; index < graphemes.length; index += numericWidth) {
+      output.push(graphemes.slice(index, index + numericWidth).join(""));
+    }
+  });
+
+  return output;
+}
+
 export function buildResponsesUrl(endpoint) {
   const clean = endpoint.trim().replace(/\/+$/, "");
   if (/\/responses$/i.test(clean)) return clean;
