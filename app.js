@@ -44,6 +44,8 @@ const THEMES = new Set([
   "retro-yellow",
   "amber",
   "blue",
+  "pale-scanline",
+  "eye-care",
 ]);
 const THEME_COLORS = {
   default: "#ffffff",
@@ -54,6 +56,8 @@ const THEME_COLORS = {
   "retro-yellow": "#080808",
   amber: "#080808",
   blue: "#17164A",
+  "pale-scanline": "#EEF1E8",
+  "eye-care": "#D7E2DE",
 };
 const LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
 const EDITOR_HISTORY_LIMIT = 100;

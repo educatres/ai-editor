@@ -12,6 +12,7 @@
   --theme-hover-background: #f5f5f5;
   --theme-disabled-background: #fafafa;
   --theme-disabled-foreground: #444;
+  --theme-scanlines: none;
   --editor-font-size: 16px;
   --editor-font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Noto Sans Mono", monospace;
   --editor-line-height: 26.4px;
@@ -124,6 +125,50 @@
   --primary: #FAFAFA;
   --danger: #FAFAFA;
   --warning: #FAFAFA;
+}
+
+:root[data-theme="pale-scanline"] {
+  color-scheme: light;
+  --theme-background: #EEF1E8;
+  --theme-foreground: #4B5749;
+  --theme-subtle-background: #E4E9DE;
+  --theme-hover-background: #DCE3D6;
+  --theme-disabled-background: #E7EBE1;
+  --theme-disabled-foreground: #6D786A;
+  --border: #9DA99A;
+  --muted: #687466;
+  --primary: #4B5749;
+  --danger: #765854;
+  --warning: #746542;
+  --theme-scanlines: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(0, 0, 0, 0.025) 3px,
+    rgba(0, 0, 0, 0.025) 4px
+  );
+}
+
+:root[data-theme="eye-care"] {
+  color-scheme: light;
+  --theme-background: #D7E2DE;
+  --theme-foreground: #385C5B;
+  --theme-subtle-background: #CBD9D4;
+  --theme-hover-background: #C1D1CC;
+  --theme-disabled-background: #CEDBD7;
+  --theme-disabled-foreground: #657E7C;
+  --border: #6E8683;
+  --muted: #587472;
+  --primary: #385C5B;
+  --danger: #765956;
+  --warning: #786947;
+  --theme-scanlines: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(56, 92, 91, 0.04) 3px,
+    rgba(56, 92, 91, 0.04) 4px
+  );
 }
 
 * { box-sizing: border-box; }
@@ -507,6 +552,19 @@ input, select, .dialog-form textarea {
   border-radius: 3px;
   background: var(--theme-subtle-background);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html,
+body,
+.toolbar,
+.theme-menu,
+.line-numbers,
+#editor,
+dialog,
+input,
+select,
+.dialog-form textarea {
+  background-image: var(--theme-scanlines);
 }
 
 .settings-tools {
