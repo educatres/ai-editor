@@ -42,6 +42,8 @@ const THEMES = new Set([
   "retro-gray",
   "retro-orange",
   "retro-yellow",
+  "amber",
+  "blue",
 ]);
 const THEME_COLORS = {
   default: "#ffffff",
@@ -50,6 +52,8 @@ const THEME_COLORS = {
   "retro-gray": "#070707",
   "retro-orange": "#090500",
   "retro-yellow": "#080808",
+  amber: "#080808",
+  blue: "#17164A",
 };
 const LOCAL_STORAGE_ESTIMATED_QUOTA_BYTES = 5 * 1024 * 1024;
 const EDITOR_HISTORY_LIMIT = 100;

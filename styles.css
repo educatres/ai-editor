@@ -96,6 +96,36 @@
   --warning: #FFD84D;
 }
 
+:root[data-theme="amber"] {
+  color-scheme: dark;
+  --theme-background: #080808;
+  --theme-foreground: #E6CEA7;
+  --theme-subtle-background: #11100E;
+  --theme-hover-background: #1D1A16;
+  --theme-disabled-background: #0D0C0B;
+  --theme-disabled-foreground: #E6CEA7;
+  --border: #E6CEA7;
+  --muted: #E6CEA7;
+  --primary: #E6CEA7;
+  --danger: #E6CEA7;
+  --warning: #E6CEA7;
+}
+
+:root[data-theme="blue"] {
+  color-scheme: dark;
+  --theme-background: #17164A;
+  --theme-foreground: #FAFAFA;
+  --theme-subtle-background: #211F5B;
+  --theme-hover-background: #2B296B;
+  --theme-disabled-background: #1B1A50;
+  --theme-disabled-foreground: #FAFAFA;
+  --border: #FAFAFA;
+  --muted: #FAFAFA;
+  --primary: #FAFAFA;
+  --danger: #FAFAFA;
+  --warning: #FAFAFA;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
