@@ -172,7 +172,7 @@ button:disabled { opacity: .45; }
 .preview-scroller {
   max-width: 100%;
   overflow-x: auto;
-  padding: 14px max(10px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  padding: 14px max(10px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) 0;
 }
 
 .preview-content {
