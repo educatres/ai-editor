@@ -4,6 +4,7 @@ import {
   PROVIDERS,
   CONTEXT_MODE_SYSTEM_PROMPT,
   appendContextModeSystemPrompt,
+  buildPreviewRows,
   buildContextPolishInput,
   buildProviderRequest,
   buildResponsesUrl,
@@ -206,6 +207,18 @@ assert.deepEqual(wrapPreviewLines("第一行\r\n第二行\r第三行", 20), ["�
 assert.deepEqual(wrapPreviewLines("文字\n", 20), ["文字", ""]);
 assert.deepEqual(wrapPreviewLines("不換行\n第二行", null), ["不換行", "第二行"]);
 assert.deepEqual(wrapPreviewLines("A👨‍👩‍👧‍👦B", 2), ["A👨‍👩‍👧‍👦", "B"]);
+assert.deepEqual(buildPreviewRows("12345\n第二行", 2), [
+  { text: "12", lineNumber: 1 },
+  { text: "34", lineNumber: null },
+  { text: "5", lineNumber: null },
+  { text: "第二", lineNumber: 2 },
+  { text: "行", lineNumber: null },
+]);
+assert.deepEqual(buildPreviewRows("第一行\n\n第三行", null), [
+  { text: "第一行", lineNumber: 1 },
+  { text: "", lineNumber: 2 },
+  { text: "第三行", lineNumber: 3 },
+]);
 
 assert.equal(PROMPT_PRESETS.general.content.startsWith("你是繁體中文文字編輯助手。"), true);
 assert.equal(PROMPT_PRESETS.codex.content.includes("## 基本原則"), true);

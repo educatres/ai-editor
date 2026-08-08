@@ -12,7 +12,7 @@ import {
   renderFullPolishedDocument,
   renderPolishedDocument,
   unescapeSpecialBraces,
-} from "./core.js?v=12";
+} from "./core.js?v=13";
 import { PROMPT_PRESETS, mergePromptText } from "./prompt-presets.js?v=3";
 
 const STORAGE_KEYS = {
@@ -1410,6 +1410,11 @@ elements.themeMenu.addEventListener("keydown", (event) => {
 });
 document.addEventListener("pointerdown", (event) => {
   if (!event.target.closest(".theme-picker")) closeThemeMenu();
+});
+window.addEventListener("storage", (event) => {
+  if (event.key === STORAGE_KEYS.theme && event.newValue !== null) {
+    applyTheme(event.newValue, false);
+  }
 });
 elements.searchBtn.addEventListener("click", () => {
   elements.searchForm.hidden = false;

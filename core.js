@@ -108,25 +108,32 @@ function splitGraphemes(text) {
   return Array.from(text);
 }
 
-export function wrapPreviewLines(text, width = null) {
+export function buildPreviewRows(text, width = null) {
   const normalized = String(text).replace(/\r\n?/g, "\n");
   const numericWidth = Number(width);
   const shouldWrap = Number.isInteger(numericWidth) && numericWidth > 0;
   const output = [];
 
-  normalized.split("\n").forEach((line) => {
+  normalized.split("\n").forEach((line, lineIndex) => {
     if (!shouldWrap || line === "") {
-      output.push(line);
+      output.push({ text: line, lineNumber: lineIndex + 1 });
       return;
     }
 
     const graphemes = splitGraphemes(line);
     for (let index = 0; index < graphemes.length; index += numericWidth) {
-      output.push(graphemes.slice(index, index + numericWidth).join(""));
+      output.push({
+        text: graphemes.slice(index, index + numericWidth).join(""),
+        lineNumber: index === 0 ? lineIndex + 1 : null,
+      });
     }
   });
 
   return output;
+}
+
+export function wrapPreviewLines(text, width = null) {
+  return buildPreviewRows(text, width).map(({ text: line }) => line);
 }
 
 export function buildResponsesUrl(endpoint) {

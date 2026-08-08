@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <title>全文預覽｜AI Editor</title>
-  <link rel="stylesheet" href="preview.css?v=1">
+  <link rel="stylesheet" href="preview.css?v=2">
 </head>
 <body>
   <header class="preview-toolbar" aria-label="預覽工具列">
@@ -16,6 +16,7 @@
         <option value="20">20 字</option>
         <option value="40">40 字</option>
         <option value="60">60 字</option>
+        <option value="screen">依螢幕寬度</option>
         <option value="none">不換行</option>
       </select>
     </label>
@@ -24,12 +25,33 @@
       <output id="fontSizeOutput" aria-live="polite">16px</output>
       <button id="fontLargerBtn" type="button" aria-label="放大預覽文字">A+</button>
     </div>
+    <div class="theme-picker">
+      <button
+        id="themeBtn"
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-controls="themeMenu"
+      >主題</button>
+      <div id="themeMenu" class="theme-menu" role="menu" hidden>
+        <button type="button" role="menuitemradio" data-theme="default">預設</button>
+        <button type="button" role="menuitemradio" data-theme="soft">柔和</button>
+        <button type="button" role="menuitemradio" data-theme="retro-green">復古綠</button>
+        <button type="button" role="menuitemradio" data-theme="retro-gray">復古灰</button>
+        <button type="button" role="menuitemradio" data-theme="retro-orange">復古橘</button>
+        <button type="button" role="menuitemradio" data-theme="retro-yellow">復古黃</button>
+        <button type="button" role="menuitemradio" data-theme="amber">琥珀色</button>
+        <button type="button" role="menuitemradio" data-theme="blue">藍色</button>
+        <button type="button" role="menuitemradio" data-theme="pale-scanline">淡色細紋</button>
+        <button type="button" role="menuitemradio" data-theme="eye-care">護眼豆沙</button>
+      </div>
+    </div>
   </header>
 
   <main class="preview-scroller" tabindex="0" aria-label="全文預覽內容">
     <div id="previewContent" class="preview-content"></div>
   </main>
 
-  <script type="module" src="preview.js?v=2"></script>
+  <script type="module" src="preview.js?v=3"></script>
 </body>
 </html>
